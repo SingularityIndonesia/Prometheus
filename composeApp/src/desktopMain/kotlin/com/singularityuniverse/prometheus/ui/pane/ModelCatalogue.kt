@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModelCatalogue(
     modifier: Modifier,
@@ -33,20 +34,6 @@ fun ModelCatalogue(
         windowController.setMinimumSize(400.dp to 600.dp)
     }
 
-    // Function to refresh project list
-    val refreshProjects = remember {
-        {
-            coroutineScope.launch {
-                isLoading = true
-                projects = withContext(Dispatchers.IO) {
-                    scanForProjects()
-                }
-                isLoading = false
-            }
-            Unit
-        }
-    }
-
     // Scan for projects on first composition
     LaunchedEffect(Unit) {
         isLoading = true
@@ -56,11 +43,54 @@ fun ModelCatalogue(
         isLoading = false
     }
 
-    Column(modifier = modifier) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Projects")
+                },
+            )
+        },
+        bottomBar = {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        coroutineScope.launch {
+                            isLoading = true
+                            projects = withContext(Dispatchers.IO) {
+                                scanForProjects()
+                            }
+                            isLoading = false
+                        }
+                    }
+                ) {
+                    Text("Refresh")
+                }
+
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = onCreateNewModel
+                ) {
+                    Text("New Model")
+                }
+            }
+        }
+    ) {
         LazyColumn(
-            modifier = Modifier.fillMaxWidth()
-                .weight(1f),
-            contentPadding = PaddingValues(16.dp),
+            modifier = Modifier
+                .padding(it)
+                .fillMaxWidth(),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                bottom = 16.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (isLoading) {
@@ -100,7 +130,7 @@ fun ModelCatalogue(
                         ) {
                             Text(
                                 text = project.name,
-                                style = MaterialTheme.typography.headlineSmall
+                                style = MaterialTheme.typography.titleMedium
                             )
                             Text(
                                 text = "Size: ${formatFileSize(project.modelFileSize)}",
@@ -113,27 +143,6 @@ fun ModelCatalogue(
                         }
                     }
                 }
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedButton(
-                modifier = Modifier.weight(1f),
-                onClick = refreshProjects
-            ) {
-                Text("Refresh")
-            }
-
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = onCreateNewModel
-            ) {
-                Text("New Model")
             }
         }
     }

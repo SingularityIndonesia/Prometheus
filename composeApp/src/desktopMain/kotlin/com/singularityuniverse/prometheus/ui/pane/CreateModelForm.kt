@@ -14,6 +14,9 @@ import com.singularityuniverse.prometheus.utils.to
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.painterResource
+import prometheus.composeapp.generated.resources.Res
+import prometheus.composeapp.generated.resources.ic_back
 import java.io.File
 import java.io.IOException
 import java.net.URI
@@ -59,6 +62,18 @@ fun CreateModelForm(
             TopAppBar(
                 title = {
                     Text("Create Model")
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = {
+                            onReturn.invoke(null)
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_back),
+                            contentDescription = null
+                        )
+                    }
                 }
             )
         }
