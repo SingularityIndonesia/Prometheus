@@ -58,6 +58,7 @@ fun CreateModelForm(
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -79,7 +80,7 @@ fun CreateModelForm(
         }
     ) {
         Column(
-            modifier = modifier.padding(it),
+            modifier = Modifier.padding(it),
         ) {
 
             // Error message display

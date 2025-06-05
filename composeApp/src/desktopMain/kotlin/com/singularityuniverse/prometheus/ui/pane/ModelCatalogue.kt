@@ -44,6 +44,7 @@ fun ModelCatalogue(
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
