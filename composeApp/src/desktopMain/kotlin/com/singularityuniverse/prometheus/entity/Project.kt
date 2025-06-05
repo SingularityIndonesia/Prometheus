@@ -27,7 +27,7 @@ fun scanForProjects(): List<Project> {
         // Scan all subdirectories for model.csv files
         prometheusDir.listFiles { file -> file.isDirectory }
             ?.mapNotNull { projectDir ->
-                val modelFile = File(projectDir, "model.txt")
+                val modelFile = File(projectDir, "metadata.txt")
                 if (modelFile.exists() && modelFile.isFile) {
                     Project(
                         name = projectDir.name,

@@ -20,37 +20,146 @@ import prometheus.composeapp.generated.resources.ic_back
 import java.io.File
 import java.io.IOException
 import java.net.URI
+import java.nio.ByteBuffer
 import kotlin.random.Random
+
+class CreateModelFormState {
+    val modelName = mutableStateOf("")
+    val neuronPerLayer = mutableStateOf("1000")
+    val layerCount = mutableStateOf("1000")
+    val initialBiasMode = mutableStateOf("Random")
+    val determinedBias = mutableStateOf<Double?>(null)
+    val isLoading = mutableStateOf(false)
+    val errorMessage = mutableStateOf<String?>(null)
+    val totalParameter
+        get() = run {
+            val neuronsPerLayer = neuronPerLayer.value.toIntOrNull() ?: 0
+            val layerCount = layerCount.value.toIntOrNull() ?: 0
+            val totalParams = neuronsPerLayer * layerCount
+
+            // Format number with spaces as thousand separators
+            totalParams.toString()
+                .reversed()
+                .chunked(3)
+                .joinToString(" ")
+                .reversed()
+        }
+
+    suspend fun createModel(): Result<URI> {
+        isLoading.value = true
+        errorMessage.value = null
+
+        return runCatching {
+            withContext(Dispatchers.IO) {
+                // Calculate total parameters
+                val neuronsPerLayer = neuronPerLayer.value.toIntOrNull() ?: 0
+                val layers = layerCount.value.toIntOrNull() ?: 0
+
+                // Create directory structure
+                val homeDir = System.getProperty("user.home")
+                val prometheusDir = File(homeDir, "Prometheus")
+                val projectDir = File(prometheusDir, modelName.value)
+
+                // Check if project already exists
+                if (projectDir.exists()) {
+                    throw IllegalStateException("Project with name '${modelName.value}' already exists")
+                }
+
+                // Create directories
+                if (!projectDir.mkdirs()) {
+                    throw IOException("Failed to create project directory")
+                }
+
+                // Write bias values to binary file
+                val biasFile = File(projectDir, "bias")
+                biasFile.outputStream()
+                    .buffered()
+                    .use { outputStream ->
+                        // Create buffer for one layer worth of floats (4 bytes per float)
+                        val layerBuffer = ByteBuffer.allocate(neuronsPerLayer * 4)
+
+                        repeat(layers) { layerIndex ->
+                            layerBuffer.clear() // Reset buffer position for reuse
+
+                            // Fill buffer with bias values for this layer
+                            repeat(neuronsPerLayer) {
+                                val biasValue = when (initialBiasMode.value) {
+                                    "Determined" -> (determinedBias.value ?: 0.0).toFloat()
+                                    else -> Random.nextDouble(-1.0, 1.0).toFloat()
+                                }
+                                layerBuffer.putFloat(biasValue)
+                            }
+
+                            // Write entire layer buffer to file at once
+                            outputStream.write(
+                                layerBuffer.array(),
+                                0,
+                                layerBuffer.position()
+                            )
+                        }
+                    }
+
+                // Write weight values to binary file
+                val weightsFile = File(projectDir, "weights")
+                weightsFile.outputStream()
+                    .buffered()
+                    .use { outputStream ->
+                        // For each layer (except the last one), create connections to the next layer
+                        repeat(layers - 1) { layerIndex ->
+                            val currentLayerSize = neuronsPerLayer
+                            val nextLayerSize = neuronsPerLayer
+
+                            // Create buffer for weights between current and next layer
+                            val weightBuffer = ByteBuffer.allocate(currentLayerSize * nextLayerSize * 4)
+
+                            // Fill buffer with weight values
+                            repeat(currentLayerSize * nextLayerSize) {
+                                val weightValue = Random.nextDouble(-1.0, 1.0).toFloat()
+                                weightBuffer.putFloat(weightValue)
+                            }
+
+                            // Write weights to file
+                            outputStream.write(weightBuffer.array(), 0, weightBuffer.position())
+                        }
+                    }
+
+                // Create metadata file with additional information
+                val metadataFile = File(projectDir, "metadata.txt")
+                metadataFile.bufferedWriter().use { writer ->
+                    writer.appendLine("createdAt = ${System.currentTimeMillis()}")
+                    writer.appendLine("version = 1.0")
+                    writer.appendLine("modelName = ${modelName.value}")
+                    writer.appendLine("nodesPerLayer = $neuronsPerLayer")
+                    writer.appendLine("layerCount = $layers")
+                    writer.appendLine("totalParameters = ${neuronsPerLayer * layers}")
+                    writer.appendLine()
+                    writer.appendLine("biasMode = ${initialBiasMode.value}")
+                    if (initialBiasMode.value == "Determined") {
+                        writer.appendLine("biasValue = ${determinedBias.value}")
+                    }
+                    writer.appendLine()
+                }
+
+                // Create Uri for the model file
+                metadataFile.toURI()
+            }
+        }
+            .onFailure { e ->
+                errorMessage.value = e.message
+                isLoading.value = false
+            }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateModelForm(
+    state: CreateModelFormState,
     modifier: Modifier = Modifier,
     onReturn: (fileUri: URI?) -> Unit
 ) {
+    val scope = rememberCoroutineScope()
     val windowController = LocalWindowController.current
-
-    var modelName by remember { mutableStateOf("") }
-    var neuronPerLayer by remember { mutableStateOf("1000") }
-    var layerCount by remember { mutableStateOf("1000") }
-    var initialBiasMode by remember { mutableStateOf("Random") }
-    var determinedBias by remember { mutableStateOf<Double?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    val coroutineScope = rememberCoroutineScope()
-    val totalParameter = run {
-        val neuronsPerLayer = neuronPerLayer.toIntOrNull() ?: 0
-        val layerCount = layerCount.toIntOrNull() ?: 0
-        val totalParams = neuronsPerLayer * layerCount
-
-        // Format number with spaces as thousand separators
-        totalParams.toString()
-            .reversed()
-            .chunked(3)
-            .joinToString(" ")
-            .reversed()
-    }
 
     // Check and adjust window size if needed
     LaunchedEffect(Unit) {
@@ -72,19 +181,19 @@ fun CreateModelForm(
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_back),
-                            contentDescription = null
+                            contentDescription = "Go back"
                         )
                     }
                 }
             )
         }
-    ) {
+    ) { paddingValues ->
         Column(
-            modifier = Modifier.padding(it),
+            modifier = Modifier.padding(paddingValues),
         ) {
 
             // Error message display
-            errorMessage?.let { message ->
+            state.errorMessage.value?.let { message ->
                 Card(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
@@ -105,7 +214,7 @@ fun CreateModelForm(
                             modifier = Modifier.weight(1f)
                         )
                         TextButton(
-                            onClick = { errorMessage = null }
+                            onClick = { state.errorMessage.value = null }
                         ) {
                             Text("Dismiss")
                         }
@@ -130,22 +239,39 @@ fun CreateModelForm(
                         label = {
                             Text("Model Name")
                         },
-                        value = modelName,
+                        value = state.modelName.value,
                         onValueChange = { value ->
-                            modelName = value
-                        }
+                            state.modelName.value = value
+                        },
+                        isError = state.modelName.value.isBlank(),
+                        supportingText = if (state.modelName.value.isBlank()) {
+                            { Text("Model name is required") }
+                        } else null
                     )
                 }
+
                 item {
                     OutlinedTextField(
                         modifier = Modifier.fillMaxWidth(),
                         label = {
                             Text("Neurons per Layer")
                         },
-                        value = neuronPerLayer,
+                        value = state.neuronPerLayer.value,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         onValueChange = { value ->
-                            neuronPerLayer = value
+                            // Only allow numeric input
+                            if (value.isEmpty() || value.all { it.isDigit() }) {
+                                state.neuronPerLayer.value = value
+                            }
+                        },
+                        isError = state.neuronPerLayer.value.toIntOrNull() == null || state.neuronPerLayer.value.toInt() <= 0,
+                        supportingText = {
+                            val neurons = state.neuronPerLayer.value.toIntOrNull()
+                            when {
+                                neurons == null -> Text("Please enter a valid number")
+                                neurons <= 0 -> Text("Number must be greater than 0")
+                                else -> Text("Valid")
+                            }
                         }
                     )
                 }
@@ -156,13 +282,22 @@ fun CreateModelForm(
                         label = {
                             Text("Layer Count")
                         },
-                        value = layerCount,
+                        value = state.layerCount.value,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         onValueChange = { value ->
-                            layerCount = value
+                            // Only allow numeric input
+                            if (value.isEmpty() || value.all { it.isDigit() }) {
+                                state.layerCount.value = value
+                            }
                         },
+                        isError = state.layerCount.value.toIntOrNull() == null || state.layerCount.value.toInt() <= 1,
                         supportingText = {
-                            Text("Total Parameter: $totalParameter")
+                            val layers = state.layerCount.value.toIntOrNull()
+                            when {
+                                layers == null -> Text("Please enter a valid number")
+                                layers <= 1 -> Text("Must have at least 2 layers")
+                                else -> Text("Total Parameters: ${state.totalParameter}")
+                            }
                         }
                     )
                 }
@@ -181,11 +316,20 @@ fun CreateModelForm(
                                 .fillMaxWidth()
                                 .menuAnchor(MenuAnchorType.PrimaryNotEditable),
                             readOnly = true,
-                            value = initialBiasMode,
+                            value = state.initialBiasMode.value,
                             onValueChange = {},
                             label = { Text("Initial Bias") },
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                            },
+                            supportingText = {
+                                Text(
+                                    when (state.initialBiasMode.value) {
+                                        "Random" -> "Bias values will be randomized between -1 and 1"
+                                        "Determined" -> "All bias values will be set to the specified value"
+                                        else -> ""
+                                    }
+                                )
                             }
                         )
                         ExposedDropdownMenu(
@@ -196,14 +340,14 @@ fun CreateModelForm(
                                 DropdownMenuItem(
                                     text = { Text(option) },
                                     onClick = {
-                                        initialBiasMode = option
+                                        state.initialBiasMode.value = option
                                         expanded = false
                                         // Reset determined bias when switching modes
                                         if (option == "Random") {
-                                            determinedBias = null
+                                            state.determinedBias.value = null
                                         }
                                         if (option == "Determined") {
-                                            determinedBias = 1.0
+                                            state.determinedBias.value = 0.0
                                         }
                                     }
                                 )
@@ -212,15 +356,23 @@ fun CreateModelForm(
                     }
                 }
 
-                if (initialBiasMode == "Determined") {
+                if (state.initialBiasMode.value == "Determined") {
                     item {
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text("Bias Value") },
-                            value = determinedBias?.toString() ?: "",
+                            value = state.determinedBias.value?.toString() ?: "",
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             onValueChange = { input ->
-                                determinedBias = input.toDoubleOrNull()
+                                state.determinedBias.value = input.toDoubleOrNull()
+                            },
+                            isError = state.determinedBias.value == null && state.initialBiasMode.value == "Determined",
+                            supportingText = {
+                                if (state.determinedBias.value == null && state.initialBiasMode.value == "Determined") {
+                                    Text("Please enter a valid decimal number")
+                                } else {
+                                    Text("Recommended range: -1.0 to 1.0")
+                                }
                             }
                         )
                     }
@@ -233,74 +385,23 @@ fun CreateModelForm(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
                     .fillMaxWidth(),
-                enabled = !isLoading && modelName.isNotBlank() &&
-                        neuronPerLayer.toIntOrNull() != null &&
-                        layerCount.toIntOrNull() != null &&
-                        (initialBiasMode != "Determined" || determinedBias != null),
+                enabled = !state.isLoading.value &&
+                        state.modelName.value.isNotBlank() &&
+                        state.neuronPerLayer.value.toIntOrNull() != null &&
+                        state.neuronPerLayer.value.toInt() > 0 &&
+                        state.layerCount.value.toIntOrNull() != null &&
+                        state.layerCount.value.toInt() > 1 &&
+                        (state.initialBiasMode.value != "Determined" || state.determinedBias.value != null),
                 onClick = {
-                    coroutineScope.launch {
-                        isLoading = true
-                        errorMessage = null
-
-                        runCatching {
-                            withContext(Dispatchers.IO) {
-                                // Calculate total parameters
-                                val neuronsPerLayer = neuronPerLayer.toIntOrNull() ?: 0
-                                val layers = layerCount.toIntOrNull() ?: 0
-                                val totalParams = neuronsPerLayer * layers
-
-                                // Create directory structure
-                                val homeDir = System.getProperty("user.home")
-                                val prometheusDir = File(homeDir, "Prometheus")
-                                val projectDir = File(prometheusDir, modelName)
-
-                                // Check if project already exists
-                                if (projectDir.exists()) {
-                                    throw IllegalStateException("Project with name '$modelName' already exists")
-                                }
-
-                                // Create directories
-                                if (!projectDir.mkdirs()) {
-                                    throw IOException("Failed to create project directory")
-                                }
-
-                                // Save model data to TXT
-                                val modelFile = File(projectDir, "model.txt")
-                                modelFile.bufferedWriter().use { writer ->
-                                    // Write model configuration
-                                    writer.appendLine("modelName = $modelName")
-                                    writer.appendLine("nodesPerLayer = $neuronsPerLayer")
-
-                                    // Write bias values as comma-separated list
-                                    writer.append("bias = ")
-
-                                    // Write bias values directly to file to avoid creating large arrays in memory
-                                    repeat(totalParams) { index ->
-                                        if (index > 0) writer.append(", ")
-                                        val biasValue = when (initialBiasMode) {
-                                            "Determined" -> determinedBias ?: 0.0
-                                            else -> Random.nextDouble(-1.0, 1.0) // Random bias between -1 and 1
-                                        }
-                                        writer.append(String.format("%.6f", biasValue))
-                                    }
-                                    writer.appendLine()
-                                }
-
-                                // Create Uri for the file
-                                modelFile.toURI()
+                    scope.launch {
+                        state.createModel()
+                            .onSuccess { fileUri ->
+                                runInMainThread { onReturn(fileUri) }
                             }
-                        }.onSuccess { fileUri ->
-                            runInMainThread { onReturn(fileUri) }
-                        }.onFailure { e ->
-                            runInMainThread {
-                                errorMessage = e.message
-                                isLoading = false
-                            }
-                        }
                     }
                 }
             ) {
-                if (isLoading) {
+                if (state.isLoading.value) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -308,10 +409,10 @@ fun CreateModelForm(
                             modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp
                         )
-                        Text("Creating...")
+                        Text("Creating Model...")
                     }
                 } else {
-                    Text("Create")
+                    Text("Create Model")
                 }
             }
 
