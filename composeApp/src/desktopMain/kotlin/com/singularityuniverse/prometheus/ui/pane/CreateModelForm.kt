@@ -275,7 +275,6 @@ fun CreateModelForm(
                                     writer.append("bias = ")
 
                                     // Write bias values directly to file to avoid creating large arrays in memory
-                                    // todo: instead of writing one by one, write in chunked size instead to make it faster
                                     repeat(totalParams) { index ->
                                         if (index > 0) writer.append(", ")
                                         val biasValue = when (initialBiasMode) {
