@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.singularityuniverse.prometheus.utils.runInMainThread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -56,6 +57,38 @@ fun CreateModelForm(
         Column(
             modifier = modifier.padding(it),
         ) {
+
+            // Error message display
+            errorMessage?.let { message ->
+                Card(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = message,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(
+                            onClick = { errorMessage = null }
+                        ) {
+                            Text("Dismiss")
+                        }
+                    }
+                }
+                Spacer(Modifier.size(16.dp))
+            }
+
             LazyColumn(
                 modifier = Modifier.fillMaxWidth()
                     .weight(1f),
@@ -169,9 +202,11 @@ fun CreateModelForm(
                 }
             }
 
+            Spacer(Modifier.size(16.dp))
+
             Button(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp)
                     .fillMaxWidth(),
                 enabled = !isLoading && modelName.isNotBlank() &&
                         neuronPerLayer.toIntOrNull() != null &&
@@ -182,7 +217,7 @@ fun CreateModelForm(
                         isLoading = true
                         errorMessage = null
 
-                        try {
+                        runCatching {
                             withContext(Dispatchers.IO) {
                                 // Calculate total parameters
                                 val neuronsPerLayer = neuronPerLayer.toIntOrNull() ?: 0
@@ -226,19 +261,15 @@ fun CreateModelForm(
                                 )
 
                                 // Create Uri for the file
-                                val fileUri = modelFile.toURI()
-
-                                // Call onReturn with success
-                                onReturn(fileUri)
+                                modelFile.toURI()
                             }
-                        } catch (e: IllegalStateException) {
-                            errorMessage = e.message
-                        } catch (e: IOException) {
-                            errorMessage = "Failed to create model file: ${e.message}"
-                        } catch (e: Exception) {
-                            errorMessage = "Unknown error occurred: ${e.message}"
-                        } finally {
-                            isLoading = false
+                        }.onSuccess {
+                            runInMainThread { onReturn(it) }
+                        }.onFailure { e ->
+                            runInMainThread {
+                                errorMessage = e.message
+                                isLoading = false
+                            }
                         }
                     }
                 }
@@ -258,35 +289,7 @@ fun CreateModelForm(
                 }
             }
 
-            // Error message display
-            errorMessage?.let { message ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = message,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(
-                            onClick = { errorMessage = null }
-                        ) {
-                            Text("Dismiss")
-                        }
-                    }
-                }
-            }
+            Spacer(Modifier.size(16.dp))
         }
     }
 }

@@ -18,7 +18,7 @@ fun App() {
     val navController = rememberNavController()
     MaterialTheme {
         DesktopScaffold {
-            NavHost(navController = navController, startDestination = "create") {
+            NavHost(navController = navController, startDestination = "catalogue") {
                 composable(
                     route = "catalogue"
                 ) {
@@ -32,11 +32,11 @@ fun App() {
 
                 composable(
                     route = "create"
-                ) {
+                ) {nbse ->
                     CreateModelForm(
                         modifier = Modifier.fillMaxSize(),
                         onReturn = {
-
+                            navController.popBackStack()
                         }
                     )
                 }
