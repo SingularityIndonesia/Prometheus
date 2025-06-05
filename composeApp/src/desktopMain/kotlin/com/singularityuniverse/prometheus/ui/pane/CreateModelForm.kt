@@ -131,8 +131,8 @@ fun CreateModelForm(
                             Text("Model Name")
                         },
                         value = modelName,
-                        onValueChange = {
-                            modelName = it
+                        onValueChange = { value ->
+                            modelName = value
                         }
                     )
                 }
@@ -144,8 +144,8 @@ fun CreateModelForm(
                         },
                         value = neuronPerLayer,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        onValueChange = {
-                            neuronPerLayer = it
+                        onValueChange = { value ->
+                            neuronPerLayer = value
                         }
                     )
                 }
@@ -158,8 +158,8 @@ fun CreateModelForm(
                         },
                         value = layerCount,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        onValueChange = {
-                            layerCount = it
+                        onValueChange = { value ->
+                            layerCount = value
                         },
                         supportingText = {
                             Text("Total Parameter: $totalParameter")
@@ -179,7 +179,7 @@ fun CreateModelForm(
                         OutlinedTextField(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .menuAnchor(),
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
                             readOnly = true,
                             value = initialBiasMode,
                             onValueChange = {},
@@ -249,14 +249,6 @@ fun CreateModelForm(
                                 val layers = layerCount.toIntOrNull() ?: 0
                                 val totalParams = neuronsPerLayer * layers
 
-                                // Create the array with initial bias values
-                                val modelData = Array(totalParams) {
-                                    when (initialBiasMode) {
-                                        "Determined" -> determinedBias ?: 0.0
-                                        else -> Random.nextDouble(-1.0, 1.0) // Random bias between -1 and 1
-                                    }
-                                }
-
                                 // Create directory structure
                                 val homeDir = System.getProperty("user.home")
                                 val prometheusDir = File(homeDir, "Prometheus")
@@ -274,27 +266,32 @@ fun CreateModelForm(
 
                                 // Save model data to TXT
                                 val modelFile = File(projectDir, "model.txt")
-                                modelFile.writeText(
-                                    buildString {
-                                        // Write model configuration
-                                        appendLine("modelName = $modelName")
-                                        appendLine("nodesPerLayer = $neuronsPerLayer")
-                                        
-                                        // Write bias values as comma-separated list
-                                        append("bias = ")
-                                        modelData.forEachIndexed { index, value ->
-                                            if (index > 0) append(", ")
-                                            append(String.format("%.6f", value))
+                                modelFile.bufferedWriter().use { writer ->
+                                    // Write model configuration
+                                    writer.appendLine("modelName = $modelName")
+                                    writer.appendLine("nodesPerLayer = $neuronsPerLayer")
+
+                                    // Write bias values as comma-separated list
+                                    writer.append("bias = ")
+
+                                    // Write bias values directly to file to avoid creating large arrays in memory
+                                    // todo: instead of writing one by one, write in chunked size instead to make it faster
+                                    repeat(totalParams) { index ->
+                                        if (index > 0) writer.append(", ")
+                                        val biasValue = when (initialBiasMode) {
+                                            "Determined" -> determinedBias ?: 0.0
+                                            else -> Random.nextDouble(-1.0, 1.0) // Random bias between -1 and 1
                                         }
-                                        appendLine()
+                                        writer.append(String.format("%.6f", biasValue))
                                     }
-                                )
+                                    writer.appendLine()
+                                }
 
                                 // Create Uri for the file
                                 modelFile.toURI()
                             }
-                        }.onSuccess {
-                            runInMainThread { onReturn(it) }
+                        }.onSuccess { fileUri ->
+                            runInMainThread { onReturn(fileUri) }
                         }.onFailure { e ->
                             runInMainThread {
                                 errorMessage = e.message
