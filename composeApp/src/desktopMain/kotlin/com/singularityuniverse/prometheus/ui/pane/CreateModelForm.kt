@@ -272,16 +272,21 @@ fun CreateModelForm(
                                     throw IOException("Failed to create project directory")
                                 }
 
-                                // Save model data to CSV
-                                val modelFile = File(projectDir, "model.csv")
+                                // Save model data to TXT
+                                val modelFile = File(projectDir, "model.txt")
                                 modelFile.writeText(
                                     buildString {
-                                        // Write header
-                                        appendLine("index,bias_value")
-                                        // Write data
+                                        // Write model configuration
+                                        appendLine("modelName = $modelName")
+                                        appendLine("nodesPerLayer = $neuronsPerLayer")
+                                        
+                                        // Write bias values as comma-separated list
+                                        append("bias = ")
                                         modelData.forEachIndexed { index, value ->
-                                            appendLine("$index,$value")
+                                            if (index > 0) append(", ")
+                                            append(String.format("%.6f", value))
                                         }
+                                        appendLine()
                                     }
                                 )
 
