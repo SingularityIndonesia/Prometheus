@@ -8,7 +8,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.singularityuniverse.prometheus.utils.LocalWindowController
 import com.singularityuniverse.prometheus.utils.runInMainThread
+import com.singularityuniverse.prometheus.utils.to
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,6 +25,8 @@ fun CreateModelForm(
     modifier: Modifier = Modifier,
     onReturn: (fileUri: URI?) -> Unit
 ) {
+    val windowController = LocalWindowController.current
+
     var modelName by remember { mutableStateOf("") }
     var neuronPerLayer by remember { mutableStateOf("1000") }
     var layerCount by remember { mutableStateOf("1000") }
@@ -43,6 +47,11 @@ fun CreateModelForm(
             .chunked(3)
             .joinToString(" ")
             .reversed()
+    }
+
+    // Check and adjust window size if needed
+    LaunchedEffect(Unit) {
+        windowController.setMinimumSize(500.dp to 600.dp)
     }
 
     Scaffold(

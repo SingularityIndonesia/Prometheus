@@ -3,17 +3,16 @@ package com.singularityuniverse.prometheus.ui.pane
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.scanForProjects
+import com.singularityuniverse.prometheus.utils.LocalWindowController
 import com.singularityuniverse.prometheus.utils.formatDate
 import com.singularityuniverse.prometheus.utils.formatFileSize
+import com.singularityuniverse.prometheus.utils.to
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,9 +22,16 @@ fun ModelCatalogue(
     modifier: Modifier,
     onCreateNewModel: () -> Unit,
 ) {
+    val windowController = LocalWindowController.current
+    val coroutineScope = rememberCoroutineScope()
+
     var projects by remember { mutableStateOf<List<Project>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    val coroutineScope = rememberCoroutineScope()
+
+    // Check and adjust window size if needed
+    LaunchedEffect(Unit) {
+        windowController.setMinimumSize(400.dp to 600.dp)
+    }
 
     // Function to refresh project list
     val refreshProjects = remember {
@@ -116,7 +122,7 @@ fun ModelCatalogue(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Button(
+            OutlinedButton(
                 modifier = Modifier.weight(1f),
                 onClick = refreshProjects
             ) {
