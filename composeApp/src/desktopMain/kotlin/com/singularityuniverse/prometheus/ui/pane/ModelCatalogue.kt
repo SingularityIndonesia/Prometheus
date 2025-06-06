@@ -1,29 +1,22 @@
 package com.singularityuniverse.prometheus.ui.pane
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.awt.Desktop
 import java.io.File
 import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.scanForProjects
+import com.singularityuniverse.prometheus.ui.component.DeleteProjectDialog
+import com.singularityuniverse.prometheus.ui.component.ModelCatalogueBottomBar
+import com.singularityuniverse.prometheus.ui.component.ProjectsList
 import com.singularityuniverse.prometheus.utils.LocalWindowController
-import com.singularityuniverse.prometheus.utils.formatDate
-import com.singularityuniverse.prometheus.utils.formatFileSize
 import com.singularityuniverse.prometheus.utils.to
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jetbrains.compose.resources.painterResource
-import prometheus.composeapp.generated.resources.Res
-import prometheus.composeapp.generated.resources.ic_delete
-import prometheus.composeapp.generated.resources.ic_folder
-import prometheus.composeapp.generated.resources.ic_more_vert
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,32 +91,11 @@ fun ModelCatalogue(
     }
 
     // Delete confirmation dialog
-    showDeleteDialog?.let { project ->
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = null },
-            title = { Text("Delete Project") },
-            text = {
-                Text("Are you sure you want to delete the project \"${project.name}\"? This action cannot be undone.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        deleteProject(project)
-                        showDeleteDialog = null
-                    }
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showDeleteDialog = null }
-                ) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
+    DeleteProjectDialog(
+        project = showDeleteDialog,
+        onDismiss = { showDeleteDialog = null },
+        onConfirm = { project -> deleteProject(project) }
+    )
 
     Scaffold(
         modifier = modifier,
@@ -135,148 +107,30 @@ fun ModelCatalogue(
             )
         },
         bottomBar = {
-            Row(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = { refreshProjects() }
-                ) {
-                    Text("Refresh")
-                }
-
-                Button(
-                    modifier = Modifier.weight(1f),
-                    onClick = onCreateNewModel
-                ) {
-                    Text("New Model")
-                }
-            }
+            ModelCatalogueBottomBar(
+                onRefresh = { refreshProjects() },
+                onCreateNewModel = onCreateNewModel
+            )
         }
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .padding(it)
-                .fillMaxWidth(),
+        ProjectsList(
+            projects = projects,
+            isLoading = isLoading,
+            expandedProject = expandedProject,
+            onToggleExpanded = { project ->
+                expandedProject = if (expandedProject == project) null else project
+            },
+            onDeleteClick = { project ->
+                showDeleteDialog = project
+                expandedProject = null
+            },
+            onOpenFolder = { project -> openProjectFolder(project) },
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
                 bottom = 16.dp,
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            if (isLoading) {
-                item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
-                            text = "Loading projects..."
-                        )
-                    }
-                }
-            } else if (projects.isEmpty()) {
-                item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Text("No projects found")
-                            Text(
-                                text = "Create your first model to get started!",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                }
-            } else {
-                items(projects) { project ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .requiredHeight(120.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(16.dp)
-                            ) {
-                                Text(
-                                    text = project.name,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "Size: ${formatFileSize(project.modelFileSize)}",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = "Last modified: ${formatDate(project.lastModified)}",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-
-                            // More options menu
-                            Box(
-                                modifier = Modifier.align(Alignment.TopEnd)
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        expandedProject = if (expandedProject == project) null else project
-                                    }
-                                ) {
-                                    Icon(
-                                        painter = painterResource(Res.drawable.ic_more_vert),
-                                        contentDescription = "More options"
-                                    )
-                                }
-
-                                DropdownMenu(
-                                    expanded = expandedProject == project,
-                                    onDismissRequest = { expandedProject = null }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Delete") },
-                                        onClick = {
-                                            showDeleteDialog = project
-                                            expandedProject = null
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                painter = painterResource(Res.drawable.ic_delete),
-                                                contentDescription = null
-                                            )
-                                        }
-                                    )
-                                }
-                            }
-
-                            // Quick action buttons
-                            Row(
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd),
-                            ) {
-                                IconButton(
-                                    onClick = { openProjectFolder(project) }
-                                ) {
-                                    Icon(
-                                        painter = painterResource(Res.drawable.ic_folder),
-                                        contentDescription = "Open folder"
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+            modifier = Modifier.padding(it)
+        )
     }
 }
