@@ -33,9 +33,9 @@ fun CreateModelFormFields(
 
         item {
             NeuronsPerLayerField(
-                value = state.neuronPerLayer,
+                value = state.neuronsPerLayer,
                 onValueChange = { value ->
-                    state.neuronPerLayer = value
+                    state.neuronsPerLayer = value
                 }
             )
         }

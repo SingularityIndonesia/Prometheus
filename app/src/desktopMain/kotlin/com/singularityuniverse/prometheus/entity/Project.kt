@@ -1,10 +1,6 @@
 package com.singularityuniverse.prometheus.entity
 
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 import java.net.URI
 
 class Project(
@@ -20,7 +16,7 @@ class Project(
      * createdAt = 1749191842997
      * version = 1.0
      * modelName = Lilith
-     * nodesPerLayer = 100
+     * neuronsPerLayer = 100
      * layerCount = 100
      * totalParameters = 10000
      * biasMode = Random
@@ -53,8 +49,8 @@ class Project(
             emptyMap()
         }
     }
-    val biasIs: InputStream get() = FileInputStream(File(File(path), "bias"))
-    val weightsIs: InputStream get() = FileInputStream(File(File(path), "weights"))
+    val biasFile: File by lazy { File(File(path), "bias") }
+    val weightFile: File by lazy { File(File(path), "weights") }
 }
 
 /**

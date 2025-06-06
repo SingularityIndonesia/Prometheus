@@ -13,7 +13,7 @@ import kotlin.random.Random
 
 class CreateModelFormState {
     var modelName by mutableStateOf("")
-    var neuronPerLayer by mutableStateOf("1000")
+    var neuronsPerLayer by mutableStateOf("1000")
     var layerCount by mutableStateOf("1000")
     var initialBiasMode by mutableStateOf("Random")
     var determinedBias by mutableStateOf<Float?>(null)
@@ -21,7 +21,7 @@ class CreateModelFormState {
     var errorMessage by mutableStateOf<String?>(null)
     val totalParameter
         get() = run {
-            val neuronsPerLayer = neuronPerLayer.toIntOrNull() ?: 0
+            val neuronsPerLayer = neuronsPerLayer.toIntOrNull() ?: 0
             val layerCount = layerCount.toIntOrNull() ?: 0
             val totalParams = neuronsPerLayer * layerCount
 
@@ -36,8 +36,8 @@ class CreateModelFormState {
     val formIsValid
         get() = !isLoading &&
                 modelName.isNotBlank() &&
-                neuronPerLayer.toIntOrNull() != null &&
-                neuronPerLayer.toInt() > 0 &&
+                neuronsPerLayer.toIntOrNull() != null &&
+                neuronsPerLayer.toInt() > 0 &&
                 layerCount.toIntOrNull() != null &&
                 layerCount.toInt() > 1 &&
                 (initialBiasMode != "Determined" || determinedBias != null)
@@ -49,7 +49,7 @@ class CreateModelFormState {
         return runCatching {
             withContext(Dispatchers.IO) {
                 // Calculate total parameters
-                val neuronsPerLayer = neuronPerLayer.toIntOrNull() ?: 0
+                val neuronsPerLayer = neuronsPerLayer.toIntOrNull() ?: 0
                 val layers = layerCount.toIntOrNull() ?: 0
 
                 // Create directory structure
@@ -126,7 +126,7 @@ class CreateModelFormState {
                     writer.appendLine("createdAt = ${System.currentTimeMillis()}")
                     writer.appendLine("version = 1.0")
                     writer.appendLine("modelName = $modelName")
-                    writer.appendLine("nodesPerLayer = $neuronsPerLayer")
+                    writer.appendLine("neuronsPerLayer = $neuronsPerLayer")
                     writer.appendLine("layerCount = $layers")
                     writer.appendLine("totalParameters = ${neuronsPerLayer * layers}")
                     writer.appendLine("biasMode = $initialBiasMode")
