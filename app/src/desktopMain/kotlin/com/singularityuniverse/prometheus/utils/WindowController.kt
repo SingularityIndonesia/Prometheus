@@ -5,7 +5,7 @@ import androidx.compose.ui.unit.DpSize
 
 interface WindowController {
     fun setMinimumSize(size: DpSize)
-    fun requestFullScreen()
+    fun requestFullScreen(bool: Boolean)
 }
 
 val LocalWindowController = staticCompositionLocalOf<WindowController> { error("Window Controller not provided") }

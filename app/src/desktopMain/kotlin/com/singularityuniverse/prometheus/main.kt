@@ -34,8 +34,8 @@ fun main() = application {
                     )
                 }
 
-                override fun requestFullScreen() {
-                    window.extendedState = java.awt.Frame.MAXIMIZED_BOTH
+                override fun requestFullScreen(bool: Boolean) {
+                    window.extendedState = if (bool) java.awt.Frame.MAXIMIZED_BOTH else java.awt.Frame.NORMAL
                 }
             }
         }

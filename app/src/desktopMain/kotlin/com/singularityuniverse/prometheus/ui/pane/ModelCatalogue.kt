@@ -35,6 +35,7 @@ fun ModelCatalogue(
     // Check and adjust window size if needed
     LaunchedEffect(Unit) {
         windowController.setMinimumSize(400.dp to 600.dp)
+        windowController.requestFullScreen(false)
     }
 
     // Scan for projects on first composition

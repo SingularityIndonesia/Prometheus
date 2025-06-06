@@ -46,3 +46,31 @@ fun scanForProjects(): List<Project> {
             ?: emptyList()
     }.getOrNull() ?: emptyList()
 }
+
+fun getProjectByName(name: String): Result<Project> {
+    return runCatching {
+        val homeDir = System.getProperty("user.home")
+        val prometheusDir = File(homeDir, "Prometheus")
+        val targetProjectDir = File(prometheusDir, name)
+
+        // Check if Prometheus directory exists
+        if (!prometheusDir.exists() || !prometheusDir.isDirectory || !targetProjectDir.isDirectory) {
+            throw NullPointerException("project $name not found")
+        }
+
+        val metadata = File(targetProjectDir, "metadata.txt")
+        val bias = File(targetProjectDir, "bias")
+        val weight = File(targetProjectDir, "weights")
+        val modelSize = bias.length() + weight.length()
+        if (metadata.exists() && metadata.isFile) {
+            Project(
+                name = targetProjectDir.name,
+                path = targetProjectDir.toURI(),
+                modelFileSize = modelSize,
+                lastModified = weight.lastModified()
+            )
+        } else {
+            throw IllegalStateException("Project is corrupted")
+        }
+    }
+}
