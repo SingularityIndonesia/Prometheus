@@ -4,15 +4,13 @@ import com.singularityuniverse.prometheus.entity.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.nio.ByteBuffer
+import kotlin.math.min
 import kotlin.math.sqrt
 
 object GnuplotGenerator {
 
-    suspend fun generateGnuplotScript(
-        project: Project,
-        biasData: List<Float>,
-        weightData: List<Float>?
-    ): Boolean {
+    suspend fun generateGnuplotScript(project: Project): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 val metadata = project.metadata
@@ -26,43 +24,22 @@ object GnuplotGenerator {
                     gnuPlotDir.mkdir()
                 }
 
-                // Create bias data file
-                val biasDataFile = File(gnuPlotDir, "bias_data.txt")
-                biasDataFile.writeText(biasData.joinToString("\n"))
+                // Read bias data from file and create data files
+                val (biasDataFile, biasStats) = createBiasDataFiles(
+                    project.biasFile,
+                    gnuPlotDir,
+                    neuronsPerLayer,
+                    layerCount
+                )
 
-                // Create bias matrix file for heatmap
-                val biasMatrixFile = File(gnuPlotDir, "bias_matrix.txt")
-                val biasMatrix = StringBuilder()
-                for (layer in 0 until layerCount) {
-                    val rowData = mutableListOf<String>()
-                    for (neuron in 0 until neuronsPerLayer) {
-                        val biasIndex = layer * neuronsPerLayer + neuron
-                        if (biasIndex < biasData.size) {
-                            rowData.add(biasData[biasIndex].toString())
-                        } else {
-                            rowData.add("0.0")
-                        }
-                    }
-                    biasMatrix.appendLine(rowData.joinToString(" "))
-                }
-                biasMatrixFile.writeText(biasMatrix.toString())
-
-                // Create weight data file if available
-                if (weightData != null && weightData.isNotEmpty()) {
-                    val weightDataFile = File(gnuPlotDir, "weight_data.txt")
-                    weightDataFile.writeText(weightData.joinToString("\n"))
-                }
-
-                // Calculate statistics
-                val biasMean = biasData.average()
-                val biasVariance = biasData.map { (it - biasMean) * (it - biasMean) }.average()
-                val biasStdDev = sqrt(biasVariance)
-                val biasMin = biasData.minOrNull() ?: 0f
-                val biasMax = biasData.maxOrNull() ?: 0f
+                // Read weight data from file if available
+                val weightStats = if (project.weightFile.exists()) {
+                    createWeightDataFile(project.weightFile, gnuPlotDir)
+                } else null
 
                 // Fix palette range to ensure monotonic gradient
-                val paletteMin = biasMin.toDouble()
-                val paletteMax = biasMax.toDouble()
+                val paletteMin = biasStats.min.toDouble()
+                val paletteMax = biasStats.max.toDouble()
                 val paletteRange = paletteMax - paletteMin
 
                 // Ensure we have a valid range for the palette
@@ -73,20 +50,6 @@ object GnuplotGenerator {
                 } else {
                     Pair(paletteMin, paletteMax)
                 }
-
-                val weightStats = if (weightData != null && weightData.isNotEmpty()) {
-                    val weightMean = weightData.average()
-                    val weightVariance = weightData.map { (it - weightMean) * (it - weightMean) }.average()
-                    val weightStdDev = sqrt(weightVariance)
-                    val weightMin = weightData.minOrNull() ?: 0f
-                    val weightMax = weightData.maxOrNull() ?: 0f
-                    mapOf(
-                        "mean" to weightMean,
-                        "stddev" to weightStdDev,
-                        "min" to weightMin,
-                        "max" to weightMax
-                    )
-                } else null
 
                 // Generate gnuplot script
                 val gnuplotScript = """
@@ -160,5 +123,137 @@ object GnuplotGenerator {
                 false
             }
         }
+    }
+
+    private data class BiasStats(
+        val mean: Double,
+        val stdDev: Double,
+        val min: Float,
+        val max: Float,
+        val count: Int
+    )
+
+    private data class WeightStats(
+        val mean: Double,
+        val stdDev: Double,
+        val min: Float,
+        val max: Float,
+        val sampleSize: Int
+    )
+
+    private fun createBiasDataFiles(
+        biasFile: File,
+        outputDir: File,
+        neuronsPerLayer: Int,
+        layerCount: Int
+    ): Pair<File, BiasStats> {
+        val biasDataFile = File(outputDir, "bias_data.txt")
+        val biasMatrixFile = File(outputDir, "bias_matrix.txt")
+
+        // Stream process bias file to avoid loading all data into memory
+        val biasData = mutableListOf<Float>()
+        var biasSum = 0.0
+        var biasMin = Float.MAX_VALUE
+        var biasMax = Float.MIN_VALUE
+
+        biasFile.inputStream().buffered().use { inputStream ->
+            val buffer = ByteArray(8192) // 8KB buffer
+            val byteBuffer = ByteBuffer.allocate(8192)
+
+            var bytesRead: Int
+            while (inputStream.read(buffer).also { bytesRead = it } > 0) {
+                byteBuffer.clear()
+                byteBuffer.put(buffer, 0, bytesRead)
+                byteBuffer.flip()
+
+                while (byteBuffer.remaining() >= 4) {
+                    val value = byteBuffer.getFloat()
+                    biasData.add(value)
+                    biasSum += value
+                    if (value < biasMin) biasMin = value
+                    if (value > biasMax) biasMax = value
+                }
+            }
+        }
+
+        val biasMean = if (biasData.isNotEmpty()) biasSum / biasData.size else 0.0
+        val biasVariance = if (biasData.isNotEmpty()) {
+            biasData.map { (it - biasMean) * (it - biasMean) }.average()
+        } else 0.0
+        val biasStdDev = sqrt(biasVariance)
+
+        // Write bias data file
+        biasDataFile.writeText(biasData.joinToString("\n"))
+
+        // Create bias matrix file for heatmap
+        val biasMatrix = StringBuilder()
+        for (layer in 0 until layerCount) {
+            val rowData = mutableListOf<String>()
+            for (neuron in 0 until neuronsPerLayer) {
+                val biasIndex = layer * neuronsPerLayer + neuron
+                if (biasIndex < biasData.size) {
+                    rowData.add(biasData[biasIndex].toString())
+                } else {
+                    rowData.add("0.0")
+                }
+            }
+            biasMatrix.appendLine(rowData.joinToString(" "))
+        }
+        biasMatrixFile.writeText(biasMatrix.toString())
+
+        val stats = BiasStats(
+            mean = biasMean,
+            stdDev = biasStdDev,
+            min = if (biasData.isNotEmpty()) biasMin else 0f,
+            max = if (biasData.isNotEmpty()) biasMax else 0f,
+            count = biasData.size
+        )
+
+        return Pair(biasDataFile, stats)
+    }
+
+    private fun createWeightDataFile(weightFile: File, outputDir: File): WeightStats? {
+        try {
+            val weightDataFile = File(outputDir, "weight_data.txt")
+            val maxSampleSize = 100000 // Limit sample size for performance
+            val weightSample = mutableListOf<Float>()
+
+            weightFile.inputStream().buffered().use { inputStream ->
+                val maxBytes = min(maxSampleSize * 4, inputStream.available())
+                val buffer = ByteArray(maxBytes)
+                val bytesRead = inputStream.read(buffer)
+
+                if (bytesRead > 0) {
+                    val byteBuffer = ByteBuffer.wrap(buffer, 0, bytesRead)
+                    while (byteBuffer.remaining() >= 4 && weightSample.size < maxSampleSize) {
+                        weightSample.add(byteBuffer.getFloat())
+                    }
+                }
+            }
+
+            if (weightSample.isNotEmpty()) {
+                // Write sampled weight data
+                weightDataFile.writeText(weightSample.joinToString("\n"))
+
+                // Calculate statistics
+                val weightMean = weightSample.average()
+                val weightVariance = weightSample.map { (it - weightMean) * (it - weightMean) }.average()
+                val weightStdDev = sqrt(weightVariance)
+                val weightMin = weightSample.minOrNull() ?: 0f
+                val weightMax = weightSample.maxOrNull() ?: 0f
+
+                return WeightStats(
+                    mean = weightMean,
+                    stdDev = weightStdDev,
+                    min = weightMin,
+                    max = weightMax,
+                    sampleSize = weightSample.size
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return null
     }
 }
