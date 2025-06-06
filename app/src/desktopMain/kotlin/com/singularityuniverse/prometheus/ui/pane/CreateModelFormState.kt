@@ -129,7 +129,6 @@ class CreateModelFormState {
                     writer.appendLine("nodesPerLayer = $neuronsPerLayer")
                     writer.appendLine("layerCount = $layers")
                     writer.appendLine("totalParameters = ${neuronsPerLayer * layers}")
-                    writer.appendLine()
                     writer.appendLine("biasMode = ${initialBiasMode}")
                     if (initialBiasMode == "Determined") {
                         writer.appendLine("biasValue = ${determinedBias}")

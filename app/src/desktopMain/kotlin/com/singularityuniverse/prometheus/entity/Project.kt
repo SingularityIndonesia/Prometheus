@@ -1,6 +1,8 @@
 package com.singularityuniverse.prometheus.entity
 
 import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
 import java.net.URI
 
 class Project(
@@ -8,7 +10,31 @@ class Project(
     val path: URI,
     val modelFileSize: Long,
     val lastModified: Long
-)
+) {
+    val metadata: Map<String, String> by lazy {
+        runCatching {
+            val metadataFile = File(File(path), "metadata.txt")
+            if (metadataFile.exists() && metadataFile.isFile) {
+                metadataFile.readLines()
+                    .mapNotNull { line ->
+                        val trimmedLine = line.trim()
+                        if (trimmedLine.isNotEmpty() && trimmedLine.contains("=")) {
+                            val parts = trimmedLine.split("=", limit = 2)
+                            if (parts.size == 2) {
+                                parts[0].trim() to parts[1].trim()
+                            } else null
+                        } else null
+                    }.toMap()
+            } else {
+                emptyMap()
+            }
+        }.getOrElse { 
+            emptyMap() 
+        }
+    }
+    val biasOs: OutputStream get() = FileOutputStream(File(File(path), "bias"))
+    val weightsOs: OutputStream get() = FileOutputStream(File(File(path), "weights"))
+}
 
 /**
  * Scans for Prometheus project directories that contain model.csv files
@@ -44,7 +70,10 @@ fun scanForProjects(): List<Project> {
             }
             ?.sortedByDescending { it.lastModified } // Sort by most recently modified first
             ?: emptyList()
-    }.getOrNull() ?: emptyList()
+    }.getOrElse {
+        println("Error: $it")
+        emptyList()
+    }
 }
 
 fun getProjectByName(name: String): Result<Project> {

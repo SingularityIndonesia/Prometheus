@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.getProjectByName
 import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
+import com.singularityuniverse.prometheus.ui.component.Landscape
 import com.singularityuniverse.prometheus.utils.LocalWindowController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -69,6 +70,13 @@ fun WorkSpace(projectName: String, onNavigateBack: () -> Unit) {
                         CircularProgressIndicator()
                     }
                 }
+
+            // no need to display anything
+            if (project.value == null) return@LazyColumn
+
+            item {
+                Landscape(project.value!!)
+            }
         }
     }
 }
