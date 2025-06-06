@@ -19,6 +19,7 @@ fun ProjectsList(
     onToggleExpanded: (Project) -> Unit,
     onDeleteClick: (Project) -> Unit,
     onOpenFolder: (Project) -> Unit,
+    goToWorkSpace: (Project) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
@@ -61,7 +62,8 @@ fun ProjectsList(
                     isExpanded = expandedProject == project,
                     onToggleExpanded = { onToggleExpanded(project) },
                     onDeleteClick = { onDeleteClick(project) },
-                    onOpenFolder = { onOpenFolder(project) }
+                    onOpenFolder = { onOpenFolder(project) },
+                    goToWorkSpace = goToWorkSpace
                 )
             }
         }

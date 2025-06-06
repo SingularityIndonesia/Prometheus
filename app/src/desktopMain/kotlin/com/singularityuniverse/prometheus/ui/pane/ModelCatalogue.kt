@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.scanForProjects
 import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
 import com.singularityuniverse.prometheus.ui.component.DeleteProjectDialog
@@ -26,6 +27,7 @@ fun ModelCatalogue(
     state: ModelCatalogueState,
     modifier: Modifier = Modifier,
     onCreateNewModel: () -> Unit,
+    goToWorkSpace: (Project) -> Unit
 ) {
     val windowController = LocalWindowController.current
     val scope = rememberCoroutineScope()
@@ -72,6 +74,7 @@ fun ModelCatalogue(
         }
     ) {
         ProjectsList(
+            modifier = Modifier.padding(it),
             projects = state.projects,
             isLoading = state.isLoading,
             expandedProject = state.expandedProject,
@@ -92,7 +95,7 @@ fun ModelCatalogue(
                 end = 16.dp,
                 bottom = 16.dp,
             ),
-            modifier = Modifier.padding(it)
+            goToWorkSpace = goToWorkSpace,
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.singularityuniverse.prometheus.ui.component
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +16,7 @@ import prometheus.app.generated.resources.ic_delete
 import prometheus.app.generated.resources.ic_folder
 import prometheus.app.generated.resources.ic_more_vert
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProjectCard(
     project: Project,
@@ -22,10 +24,14 @@ fun ProjectCard(
     onToggleExpanded: () -> Unit,
     onDeleteClick: () -> Unit,
     onOpenFolder: () -> Unit,
+    goToWorkSpace: (Project) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        onClick = {
+            goToWorkSpace.invoke(project)
+        }
     ) {
         Box(
             modifier = Modifier

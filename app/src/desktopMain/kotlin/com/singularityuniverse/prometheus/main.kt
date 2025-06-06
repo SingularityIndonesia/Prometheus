@@ -33,6 +33,10 @@ fun main() = application {
                         size.height.value.toInt()
                     )
                 }
+
+                override fun requestFullScreen() {
+                    window.extendedState = java.awt.Frame.MAXIMIZED_BOTH
+                }
             }
         }
 
