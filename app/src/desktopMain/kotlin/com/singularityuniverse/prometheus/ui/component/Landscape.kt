@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -51,9 +52,6 @@ fun Landscape(
                 )
             }
 
-        if (state.isLoading)
-            Text("Loading model data...")
-
         if (state.error != null)
             Card(
                 modifier = Modifier.fillMaxWidth()
@@ -78,18 +76,52 @@ fun Landscape(
                 }
             }
 
-        Button(
-            enabled = !state.isLoading,
-            onClick = {
-                scope.launch {
-                    state.reload()
-                }
-            }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Button(
+                modifier = Modifier.width(160.dp),
+                onClick = {
+                    if (!state.isLoading)
+                        scope.launch {
+                            state.reload()
+                        }
+                }
+            ) {
+                if (state.isLoading)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                else
+                    Text("Reload Image")
+            }
+
+            Button(
+                modifier = Modifier.width(160.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                ),
+                onClick = {
+                    if (!state.isLoading)
+                        scope.launch {
+                            state.reload(true)
+                        }
+                }
+            ) {
+                if (state.isLoading)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onError
+                    )
+                else
+                    Text("Regenerate")
+            }
+
             if (state.isLoading)
-                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-            else
-                Text("Reload")
+                Text("Loading model data...")
         }
     }
 }
