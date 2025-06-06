@@ -12,6 +12,7 @@ import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.getProjectByName
 import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
 import com.singularityuniverse.prometheus.ui.component.Landscape
+import com.singularityuniverse.prometheus.ui.component.LandscapeState
 import com.singularityuniverse.prometheus.utils.LocalWindowController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -79,7 +80,12 @@ fun WorkSpace(projectName: String, onNavigateBack: () -> Unit) {
             if (project.value == null) return@LazyColumn
 
             item {
-                Landscape(project.value!!)
+                val state = remember(project.value!!) {
+                    LandscapeState(project.value!!)
+                }
+                Landscape(
+                    state = state
+                )
             }
         }
     }
