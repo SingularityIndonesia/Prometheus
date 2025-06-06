@@ -17,7 +17,10 @@ import prometheus.app.generated.resources.Res
 import prometheus.app.generated.resources.ic_delete
 
 @Composable
-fun Landscape(modifier: Modifier = Modifier, state: LandscapeState) {
+fun Landscape(
+    modifier: Modifier = Modifier,
+    state: LandscapeState
+) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
@@ -28,7 +31,7 @@ fun Landscape(modifier: Modifier = Modifier, state: LandscapeState) {
         if (state.surfaceImage != null && state.heatmapImage != null)
             Row(
                 modifier = Modifier
-                    .height(400.dp)
+                    .fillMaxHeight()
                     .horizontalScroll(scrollState),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
