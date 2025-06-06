@@ -55,12 +55,7 @@ fun BiasConfigurationField(
                         onBiasModeChange(option)
                         expanded = false
                         // Reset determined bias when switching modes
-                        if (option == "Random") {
-                            onDeterminedBiasChange(null)
-                        }
-                        if (option == "Determined") {
-                            onDeterminedBiasChange(0f)
-                        }
+                        onDeterminedBiasChange(null)
                     }
                 )
             }
@@ -74,13 +69,17 @@ fun DeterminedBiasValueField(
     onValueChange: (Float?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var tempValue by remember { mutableStateOf("") }
+
     OutlinedTextField(
         modifier = modifier.fillMaxWidth(),
         label = { Text("Bias Value") },
-        value = value?.toString() ?: "",
+        placeholder = { Text("0.0") },
+        value = tempValue,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         onValueChange = { input ->
-            input.toFloatOrNull()?.let { onValueChange(it) }
+            tempValue = input
+            input.toFloatOrNull()?.run(onValueChange)
         },
         isError = value == null,
         supportingText = {

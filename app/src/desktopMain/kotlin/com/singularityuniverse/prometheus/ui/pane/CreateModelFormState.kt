@@ -81,7 +81,7 @@ class CreateModelFormState {
                             // Fill buffer with bias values for this layer
                             repeat(neuronsPerLayer) {
                                 val biasValue = when (initialBiasMode) {
-                                    "Determined" -> (determinedBias ?: 0.0).toFloat()
+                                    "Determined" -> determinedBias ?: 0f
                                     else -> nextDouble(-1.0, 1.0).toFloat()
                                 }
                                 layerBuffer.putFloat(biasValue)
