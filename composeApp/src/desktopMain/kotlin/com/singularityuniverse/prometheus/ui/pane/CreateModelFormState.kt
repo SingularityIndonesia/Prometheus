@@ -1,6 +1,8 @@
 package com.singularityuniverse.prometheus.ui.pane
 
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -10,17 +12,17 @@ import java.nio.ByteBuffer
 import kotlin.random.Random
 
 class CreateModelFormState {
-    val modelName = mutableStateOf("")
-    val neuronPerLayer = mutableStateOf("1000")
-    val layerCount = mutableStateOf("1000")
-    val initialBiasMode = mutableStateOf("Random")
-    val determinedBias = mutableStateOf<Double?>(null)
-    val isLoading = mutableStateOf(false)
-    val errorMessage = mutableStateOf<String?>(null)
+    var modelName by mutableStateOf("")
+    var neuronPerLayer by mutableStateOf("1000")
+    var layerCount by mutableStateOf("1000")
+    var initialBiasMode by mutableStateOf("Random")
+    var determinedBias by mutableStateOf<Double?>(null)
+    var isLoading by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
     val totalParameter
         get() = run {
-            val neuronsPerLayer = neuronPerLayer.value.toIntOrNull() ?: 0
-            val layerCount = layerCount.value.toIntOrNull() ?: 0
+            val neuronsPerLayer = neuronPerLayer.toIntOrNull() ?: 0
+            val layerCount = layerCount.toIntOrNull() ?: 0
             val totalParams = neuronsPerLayer * layerCount
 
             // Format number with spaces as thousand separators
@@ -31,24 +33,33 @@ class CreateModelFormState {
                 .reversed()
         }
 
+    val formIsValid
+        get() = !isLoading &&
+                modelName.isNotBlank() &&
+                neuronPerLayer.toIntOrNull() != null &&
+                neuronPerLayer.toInt() > 0 &&
+                layerCount.toIntOrNull() != null &&
+                layerCount.toInt() > 1 &&
+                (initialBiasMode != "Determined" || determinedBias != null)
+
     suspend fun createModel(): Result<URI> {
-        isLoading.value = true
-        errorMessage.value = null
+        isLoading = true
+        errorMessage = null
 
         return runCatching {
             withContext(Dispatchers.IO) {
                 // Calculate total parameters
-                val neuronsPerLayer = neuronPerLayer.value.toIntOrNull() ?: 0
-                val layers = layerCount.value.toIntOrNull() ?: 0
+                val neuronsPerLayer = neuronPerLayer.toIntOrNull() ?: 0
+                val layers = layerCount.toIntOrNull() ?: 0
 
                 // Create directory structure
                 val homeDir = System.getProperty("user.home")
                 val prometheusDir = File(homeDir, "Prometheus")
-                val projectDir = File(prometheusDir, modelName.value)
+                val projectDir = File(prometheusDir, modelName)
 
                 // Check if project already exists
                 if (projectDir.exists()) {
-                    throw IllegalStateException("Project with name '${modelName.value}' already exists")
+                    throw IllegalStateException("Project with name '${modelName}' already exists")
                 }
 
                 // Create directories
@@ -69,8 +80,8 @@ class CreateModelFormState {
 
                             // Fill buffer with bias values for this layer
                             repeat(neuronsPerLayer) {
-                                val biasValue = when (initialBiasMode.value) {
-                                    "Determined" -> (determinedBias.value ?: 0.0).toFloat()
+                                val biasValue = when (initialBiasMode) {
+                                    "Determined" -> (determinedBias ?: 0.0).toFloat()
                                     else -> Random.Default.nextDouble(-1.0, 1.0).toFloat()
                                 }
                                 layerBuffer.putFloat(biasValue)
@@ -114,14 +125,14 @@ class CreateModelFormState {
                 metadataFile.bufferedWriter().use { writer ->
                     writer.appendLine("createdAt = ${System.currentTimeMillis()}")
                     writer.appendLine("version = 1.0")
-                    writer.appendLine("modelName = ${modelName.value}")
+                    writer.appendLine("modelName = ${modelName}")
                     writer.appendLine("nodesPerLayer = $neuronsPerLayer")
                     writer.appendLine("layerCount = $layers")
                     writer.appendLine("totalParameters = ${neuronsPerLayer * layers}")
                     writer.appendLine()
-                    writer.appendLine("biasMode = ${initialBiasMode.value}")
-                    if (initialBiasMode.value == "Determined") {
-                        writer.appendLine("biasValue = ${determinedBias.value}")
+                    writer.appendLine("biasMode = ${initialBiasMode}")
+                    if (initialBiasMode == "Determined") {
+                        writer.appendLine("biasValue = ${determinedBias}")
                     }
                     writer.appendLine()
                 }
@@ -131,8 +142,8 @@ class CreateModelFormState {
             }
         }
             .onFailure { e ->
-                errorMessage.value = e.message
-                isLoading.value = false
+                errorMessage = e.message
+                isLoading = false
             }
     }
 }

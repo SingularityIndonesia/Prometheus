@@ -4,10 +4,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.scanForProjects
 import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
 import com.singularityuniverse.prometheus.ui.component.DeleteProjectDialog
@@ -18,22 +19,16 @@ import com.singularityuniverse.prometheus.utils.to
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.awt.Desktop
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModelCatalogue(
-    modifier: Modifier,
+    state: ModelCatalogueState,
+    modifier: Modifier = Modifier,
     onCreateNewModel: () -> Unit,
 ) {
     val windowController = LocalWindowController.current
-    val coroutineScope = rememberCoroutineScope()
-
-    var projects by remember { mutableStateOf<List<Project>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var showDeleteDialog by remember { mutableStateOf<Project?>(null) }
-    var expandedProject by remember { mutableStateOf<Project?>(null) }
+    val scope = rememberCoroutineScope()
 
     // Check and adjust window size if needed
     LaunchedEffect(Unit) {
@@ -42,62 +37,22 @@ fun ModelCatalogue(
 
     // Scan for projects on first composition
     LaunchedEffect(Unit) {
-        isLoading = true
-        projects = withContext(Dispatchers.IO) {
+        state.isLoading = true
+        state.projects = withContext(Dispatchers.IO) {
             scanForProjects()
         }
-        isLoading = false
-    }
-
-    // Function to refresh projects list
-    fun refreshProjects() {
-        coroutineScope.launch {
-            isLoading = true
-            projects = withContext(Dispatchers.IO) {
-                scanForProjects()
-            }
-            isLoading = false
-        }
-    }
-
-    // Function to delete a project
-    fun deleteProject(project: Project) {
-        coroutineScope.launch {
-            withContext(Dispatchers.IO) {
-                try {
-                    val projectDir = File(project.path)
-                    if (projectDir.exists() && projectDir.isDirectory) {
-                        projectDir.deleteRecursively()
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            refreshProjects()
-        }
-    }
-
-    // Function to open project folder
-    fun openProjectFolder(project: Project) {
-        coroutineScope.launch {
-            withContext(Dispatchers.IO) {
-                try {
-                    val projectDir = File(project.path)
-                    if (projectDir.exists() && Desktop.isDesktopSupported()) {
-                        Desktop.getDesktop().open(projectDir)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
+        state.isLoading = false
     }
 
     // Delete confirmation dialog
     DeleteProjectDialog(
-        project = showDeleteDialog,
-        onDismiss = { showDeleteDialog = null },
-        onConfirm = { project -> deleteProject(project) }
+        project = state.showDeleteDialog,
+        onDismiss = { state.showDeleteDialog = null },
+        onConfirm = { project ->
+            scope.launch {
+                state.deleteProject(project)
+            }
+        }
     )
 
     Scaffold(
@@ -107,23 +62,31 @@ fun ModelCatalogue(
         },
         bottomBar = {
             ModelCatalogueBottomBar(
-                onRefresh = { refreshProjects() },
+                onRefresh = {
+                    scope.launch {
+                        state.refreshProjects()
+                    }
+                },
                 onCreateNewModel = onCreateNewModel
             )
         }
     ) {
         ProjectsList(
-            projects = projects,
-            isLoading = isLoading,
-            expandedProject = expandedProject,
+            projects = state.projects,
+            isLoading = state.isLoading,
+            expandedProject = state.expandedProject,
             onToggleExpanded = { project ->
-                expandedProject = if (expandedProject == project) null else project
+                state.expandedProject = if (state.expandedProject == project) null else project
             },
             onDeleteClick = { project ->
-                showDeleteDialog = project
-                expandedProject = null
+                state.showDeleteDialog = project
+                state.expandedProject = null
             },
-            onOpenFolder = { project -> openProjectFolder(project) },
+            onOpenFolder = { project ->
+                scope.launch {
+                    state.openProjectFolder(project)
+                }
+            },
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,

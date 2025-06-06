@@ -48,10 +48,10 @@ fun CreateModelForm(
         ) {
 
             // Error message display
-            state.errorMessage.value?.let { message ->
+            state.errorMessage?.let { message ->
                 ErrorMessageCard(
                     message = message,
-                    onDismiss = { state.errorMessage.value = null },
+                    onDismiss = { state.errorMessage = null },
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
                 Spacer(Modifier.size(16.dp))
@@ -67,14 +67,8 @@ fun CreateModelForm(
             Spacer(Modifier.size(16.dp))
 
             CreateModelButton(
-                isLoading = state.isLoading.value,
-                isEnabled = !state.isLoading.value &&
-                        state.modelName.value.isNotBlank() &&
-                        state.neuronPerLayer.value.toIntOrNull() != null &&
-                        state.neuronPerLayer.value.toInt() > 0 &&
-                        state.layerCount.value.toIntOrNull() != null &&
-                        state.layerCount.value.toInt() > 1 &&
-                        (state.initialBiasMode.value != "Determined" || state.determinedBias.value != null),
+                isLoading = state.isLoading,
+                isEnabled = state.formIsValid,
                 onClick = {
                     scope.launch {
                         state.createModel()

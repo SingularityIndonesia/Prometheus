@@ -12,6 +12,7 @@ import com.singularityuniverse.prometheus.ui.DesktopScaffold
 import com.singularityuniverse.prometheus.ui.pane.CreateModelForm
 import com.singularityuniverse.prometheus.ui.pane.CreateModelFormState
 import com.singularityuniverse.prometheus.ui.pane.ModelCatalogue
+import com.singularityuniverse.prometheus.ui.pane.ModelCatalogueState
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -26,6 +27,7 @@ fun App() {
                 ) {
                     ModelCatalogue(
                         modifier = Modifier.fillMaxSize(),
+                        state = remember { ModelCatalogueState() },
                         onCreateNewModel = {
                             navController.navigate("create")
                         }
@@ -34,7 +36,7 @@ fun App() {
 
                 composable(
                     route = "create"
-                ) {nbse ->
+                ) {
                     CreateModelForm(
                         modifier = Modifier.fillMaxSize(),
                         state = remember { CreateModelFormState() },

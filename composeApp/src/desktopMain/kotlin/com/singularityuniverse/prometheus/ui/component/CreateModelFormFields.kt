@@ -24,51 +24,51 @@ fun CreateModelFormFields(
     ) {
         item {
             ModelNameField(
-                value = state.modelName.value,
+                value = state.modelName,
                 onValueChange = { value ->
-                    state.modelName.value = value
+                    state.modelName = value
                 }
             )
         }
 
         item {
             NeuronsPerLayerField(
-                value = state.neuronPerLayer.value,
+                value = state.neuronPerLayer,
                 onValueChange = { value ->
-                    state.neuronPerLayer.value = value
+                    state.neuronPerLayer = value
                 }
             )
         }
 
         item {
             LayerCountField(
-                value = state.layerCount.value,
+                value = state.layerCount,
                 totalParameter = state.totalParameter,
                 onValueChange = { value ->
-                    state.layerCount.value = value
+                    state.layerCount = value
                 }
             )
         }
 
         item {
             BiasConfigurationField(
-                biasMode = state.initialBiasMode.value,
-                determinedBias = state.determinedBias.value,
+                biasMode = state.initialBiasMode,
+                determinedBias = state.determinedBias,
                 onBiasModeChange = { mode ->
-                    state.initialBiasMode.value = mode
+                    state.initialBiasMode = mode
                 },
                 onDeterminedBiasChange = { bias ->
-                    state.determinedBias.value = bias
+                    state.determinedBias = bias
                 }
             )
         }
 
-        if (state.initialBiasMode.value == "Determined") {
+        if (state.initialBiasMode == "Determined") {
             item {
                 DeterminedBiasValueField(
-                    value = state.determinedBias.value,
+                    value = state.determinedBias,
                     onValueChange = { bias ->
-                        state.determinedBias.value = bias
+                        state.determinedBias = bias
                     }
                 )
             }
