@@ -31,7 +31,7 @@ fun Landscape(
         if (state.surfaceImage != null && state.heatmapImage != null)
             Row(
                 modifier = Modifier
-                    .fillMaxHeight()
+                    .height(300.dp)
                     .horizontalScroll(scrollState),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {

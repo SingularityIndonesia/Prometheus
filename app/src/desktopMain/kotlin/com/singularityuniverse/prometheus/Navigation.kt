@@ -1,7 +1,6 @@
 package com.singularityuniverse.prometheus
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -10,11 +9,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.singularityuniverse.prometheus.ui.pane.CreateModelForm
-import com.singularityuniverse.prometheus.ui.pane.CreateModelFormState
-import com.singularityuniverse.prometheus.ui.pane.ModelCatalogue
-import com.singularityuniverse.prometheus.ui.pane.ModelCatalogueState
-import com.singularityuniverse.prometheus.ui.pane.WorkSpace
+import com.singularityuniverse.prometheus.ui.pane.*
 
 @Composable
 fun MainNavigation(navController: NavHostController) {
@@ -55,7 +50,7 @@ fun MainNavigation(navController: NavHostController) {
         ) { backStackEntry ->
             val projectName = backStackEntry.savedStateHandle.get<String>("projectName")
             WorkSpace(
-                projectName = projectName ?: return@composable,
+                state = remember { WorkSpaceState(projectName!!) },
                 onNavigateBack = {
                     navController.popBackStack()
                 }
