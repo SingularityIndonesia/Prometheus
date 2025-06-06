@@ -1,13 +1,16 @@
 package com.singularityuniverse.prometheus.ui.pane
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.singularityuniverse.prometheus.ui.component.CreateModelButton
+import com.singularityuniverse.prometheus.ui.component.CreateModelFormFields
+import com.singularityuniverse.prometheus.ui.component.ErrorMessageCard
 import com.singularityuniverse.prometheus.utils.LocalWindowController
 import com.singularityuniverse.prometheus.utils.runInMainThread
 import com.singularityuniverse.prometheus.utils.to
@@ -194,198 +197,26 @@ fun CreateModelForm(
 
             // Error message display
             state.errorMessage.value?.let { message ->
-                Card(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = message,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(
-                            onClick = { state.errorMessage.value = null }
-                        ) {
-                            Text("Dismiss")
-                        }
-                    }
-                }
+                ErrorMessageCard(
+                    message = message,
+                    onDismiss = { state.errorMessage.value = null },
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
                 Spacer(Modifier.size(16.dp))
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth()
+            CreateModelFormFields(
+                modifier = Modifier
+                    .fillMaxWidth()
                     .weight(1f),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        label = {
-                            Text("Model Name")
-                        },
-                        value = state.modelName.value,
-                        onValueChange = { value ->
-                            state.modelName.value = value
-                        },
-                        isError = state.modelName.value.isBlank(),
-                        supportingText = if (state.modelName.value.isBlank()) {
-                            { Text("Model name is required") }
-                        } else null
-                    )
-                }
-
-                item {
-                    OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        label = {
-                            Text("Neurons per Layer")
-                        },
-                        value = state.neuronPerLayer.value,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        onValueChange = { value ->
-                            // Only allow numeric input
-                            if (value.isEmpty() || value.all { it.isDigit() }) {
-                                state.neuronPerLayer.value = value
-                            }
-                        },
-                        isError = state.neuronPerLayer.value.toIntOrNull() == null || state.neuronPerLayer.value.toInt() <= 0,
-                        supportingText = {
-                            val neurons = state.neuronPerLayer.value.toIntOrNull()
-                            when {
-                                neurons == null -> Text("Please enter a valid number")
-                                neurons <= 0 -> Text("Number must be greater than 0")
-                                else -> Text("Valid")
-                            }
-                        }
-                    )
-                }
-
-                item {
-                    OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        label = {
-                            Text("Layer Count")
-                        },
-                        value = state.layerCount.value,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        onValueChange = { value ->
-                            // Only allow numeric input
-                            if (value.isEmpty() || value.all { it.isDigit() }) {
-                                state.layerCount.value = value
-                            }
-                        },
-                        isError = state.layerCount.value.toIntOrNull() == null || state.layerCount.value.toInt() <= 1,
-                        supportingText = {
-                            val layers = state.layerCount.value.toIntOrNull()
-                            when {
-                                layers == null -> Text("Please enter a valid number")
-                                layers <= 1 -> Text("Must have at least 2 layers")
-                                else -> Text("Total Parameters: ${state.totalParameter}")
-                            }
-                        }
-                    )
-                }
-
-                item {
-                    var expanded by remember { mutableStateOf(false) }
-                    val biasOptions = listOf("Random", "Determined")
-
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = !expanded },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                            readOnly = true,
-                            value = state.initialBiasMode.value,
-                            onValueChange = {},
-                            label = { Text("Initial Bias") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                            },
-                            supportingText = {
-                                Text(
-                                    when (state.initialBiasMode.value) {
-                                        "Random" -> "Bias values will be randomized between -1 and 1"
-                                        "Determined" -> "All bias values will be set to the specified value"
-                                        else -> ""
-                                    }
-                                )
-                            }
-                        )
-                        ExposedDropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            biasOptions.forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text(option) },
-                                    onClick = {
-                                        state.initialBiasMode.value = option
-                                        expanded = false
-                                        // Reset determined bias when switching modes
-                                        if (option == "Random") {
-                                            state.determinedBias.value = null
-                                        }
-                                        if (option == "Determined") {
-                                            state.determinedBias.value = 0.0
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (state.initialBiasMode.value == "Determined") {
-                    item {
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Bias Value") },
-                            value = state.determinedBias.value?.toString() ?: "",
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            onValueChange = { input ->
-                                state.determinedBias.value = input.toDoubleOrNull()
-                            },
-                            isError = state.determinedBias.value == null && state.initialBiasMode.value == "Determined",
-                            supportingText = {
-                                if (state.determinedBias.value == null && state.initialBiasMode.value == "Determined") {
-                                    Text("Please enter a valid decimal number")
-                                } else {
-                                    Text("Recommended range: -1.0 to 1.0")
-                                }
-                            }
-                        )
-                    }
-                }
-            }
+                state = state
+            )
 
             Spacer(Modifier.size(16.dp))
 
-            Button(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .fillMaxWidth(),
-                enabled = !state.isLoading.value &&
+            CreateModelButton(
+                isLoading = state.isLoading.value,
+                isEnabled = !state.isLoading.value &&
                         state.modelName.value.isNotBlank() &&
                         state.neuronPerLayer.value.toIntOrNull() != null &&
                         state.neuronPerLayer.value.toInt() > 0 &&
@@ -399,22 +230,9 @@ fun CreateModelForm(
                                 runInMainThread { onReturn(fileUri) }
                             }
                     }
-                }
-            ) {
-                if (state.isLoading.value) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Text("Creating Model...")
-                    }
-                } else {
-                    Text("Create Model")
-                }
-            }
+                },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
 
             Spacer(Modifier.size(16.dp))
         }
