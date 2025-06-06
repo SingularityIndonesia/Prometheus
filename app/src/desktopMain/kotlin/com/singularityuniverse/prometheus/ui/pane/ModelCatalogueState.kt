@@ -40,18 +40,4 @@ class ModelCatalogueState {
         }
         refreshProjects()
     }
-
-    // Function to open project folder
-    suspend fun openProjectFolder(project: Project) {
-        withContext(Dispatchers.IO) {
-            try {
-                val projectDir = File(project.path)
-                if (projectDir.exists() && Desktop.isDesktopSupported()) {
-                    Desktop.getDesktop().open(projectDir)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
 }

@@ -96,26 +96,11 @@ object GnuplotGenerator {
                     # Generated for model: ${metadata["modelName"] ?: "Unknown"}
                     # Layers: $layerCount, Neurons per Layer: $neuronsPerLayer
                     
-                    # Set terminal and output
-                    set terminal pngcairo enhanced font "Arial,12" size 1600,1200
-                    set output 'neural_network_landscape.png'
+                    # Set terminal and output for heatmap
+                    set terminal pngcairo enhanced font "Arial,12" size 1200,800
+                    set output 'bias_heatmap.png'
                     
-                    # Set up multiplot layout
-                    set multiplot layout 2,2 title "Neural Network Landscape - ${metadata["modelName"] ?: "Unknown"}" font ",16"
-                    
-                    # Plot 1: Bias Distribution Histogram
-                    set title "Bias Distribution"
-                    set xlabel "Bias Value"
-                    set ylabel "Frequency"
-                    set style fill solid 0.5
-                    set boxwidth 0.02 relative
-                    set grid
-                    set auto x
-                    set auto y
-                    
-                    plot 'bias_data.txt' using 1:(1) smooth freq with boxes lc rgb "red" title "Bias Distribution"
-                    
-                    # Plot 2: Bias Heatmap
+                    # Bias Heatmap
                     set title "Neural Network Bias Heatmap"
                     set xlabel "Neuron Index"
                     set ylabel "Layer"
@@ -131,71 +116,7 @@ object GnuplotGenerator {
                     
                     splot 'bias_matrix.txt' matrix with pm3d title "Bias Values"
                     
-                    # Plot 3: Weight Distribution (if available)
-                    set title "Weight Distribution"
-                    set xlabel "Weight Value"
-                    set ylabel "Frequency"
-                    set style fill solid 0.3
-                    set cbrange [*:*]
-                    unset view
-                    unset pm3d
-                    set grid
-                    set auto x
-                    set auto y
-                    
-                    ${
-                    if (weightStats != null) {
-                        "plot 'weight_data.txt' using 1:(1) smooth freq with boxes lc rgb \"green\" title \"Weight Distribution\""
-                    } else {
-                        "set label \"No Weight Data Available\" at graph 0.5,0.5 center font \",16\"\nplot NaN notitle"
-                    }
-                }
-                    
-                    # Plot 4: Model Statistics Summary
-                    set title "Model Statistics"
-                    unset xlabel
-                    unset ylabel
-                    unset border
-                    unset tics
-                    unset grid
-                    unset key
-                    unset cbrange
-                    unset palette
-                    unset pm3d
-                    unset view
-                    clear
-                    
-                    # Statistics labels
-                    set label 1 "Model: ${metadata["modelName"] ?: "Unknown"}" at 0.05, 0.95 font ",14"
-                    set label 2 "Layers: $layerCount" at 0.05, 0.90 font ",12"
-                    set label 3 "Neurons per Layer: $neuronsPerLayer" at 0.05, 0.85 font ",12"
-                    set label 4 "Total Parameters: ${metadata["totalParameters"] ?: "Unknown"}" at 0.05, 0.80 font ",12"
-                    
-                    set label 5 "Bias Statistics:" at 0.05, 0.70 font ",14"
-                    set label 6 "  Mean: ${"%.6f".format(biasMean)}" at 0.05, 0.65 font ",12"
-                    set label 7 "  Std Dev: ${"%.6f".format(biasStdDev)}" at 0.05, 0.60 font ",12"
-                    set label 8 "  Min: ${"%.6f".format(biasMin)}" at 0.05, 0.55 font ",12"
-                    set label 9 "  Max: ${"%.6f".format(biasMax)}" at 0.05, 0.50 font ",12"
-                    
-                    ${
-                    if (weightStats != null) {
-                        """set label 10 "Weight Statistics:" at 0.05, 0.40 font ",14"
-                    set label 11 "  Mean: ${"%.6f".format(weightStats["mean"])}" at 0.05, 0.35 font ",12"
-                    set label 12 "  Std Dev: ${"%.6f".format(weightStats["stddev"])}" at 0.05, 0.30 font ",12"
-                    set label 13 "  Min: ${"%.6f".format(weightStats["min"])}" at 0.05, 0.25 font ",12"
-                    set label 14 "  Max: ${"%.6f".format(weightStats["max"])}" at 0.05, 0.20 font ",12"
-                    set label 15 "  Sample Size: ${weightData?.size ?: 0}" at 0.05, 0.15 font ",12" """
-                    } else {
-                        """set label 10 "Weight Statistics:" at 0.05, 0.40 font ",14"
-                    set label 11 "  No weight data available" at 0.05, 0.35 font ",12" """
-                    }
-                }
-                    
-                    plot [-1:1] [-1:1] NaN notitle
-                    
-                    unset multiplot
-                    
-                    # Reset all settings for next plot
+                    # Reset all settings for surface plot
                     reset
                     
                     # Generate detailed bias surface plot
@@ -219,7 +140,7 @@ object GnuplotGenerator {
                     
                     print "Neural network visualization complete!"
                     print "Generated files:"
-                    print "  - neural_network_landscape.png (main overview)"
+                    print "  - bias_heatmap.png (2D bias heatmap)"
                     print "  - bias_surface.png (3D bias surface)"
                     print "Data files:"
                     print "  - bias_data.txt (bias values)"

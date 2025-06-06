@@ -88,7 +88,7 @@ fun ModelCatalogue(
             },
             onOpenFolder = { project ->
                 scope.launch {
-                    state.openProjectFolder(project)
+                    openProjectFolder(project)
                 }
             },
             contentPadding = PaddingValues(
