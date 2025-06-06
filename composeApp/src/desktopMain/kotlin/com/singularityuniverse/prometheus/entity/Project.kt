@@ -27,13 +27,16 @@ fun scanForProjects(): List<Project> {
         // Scan all subdirectories for model.csv files
         prometheusDir.listFiles { file -> file.isDirectory }
             ?.mapNotNull { projectDir ->
-                val modelFile = File(projectDir, "metadata.txt")
-                if (modelFile.exists() && modelFile.isFile) {
+                val metadata = File(projectDir, "metadata.txt")
+                val bias = File(projectDir, "bias")
+                val weight = File(projectDir, "weights")
+                val modelSize = bias.length() + weight.length()
+                if (metadata.exists() && metadata.isFile) {
                     Project(
                         name = projectDir.name,
                         path = projectDir.toURI(),
-                        modelFileSize = modelFile.length(),
-                        lastModified = modelFile.lastModified()
+                        modelFileSize = modelSize,
+                        lastModified = weight.lastModified()
                     )
                 } else {
                     null
