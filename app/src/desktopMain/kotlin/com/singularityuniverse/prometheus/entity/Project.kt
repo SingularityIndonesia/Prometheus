@@ -1,7 +1,9 @@
 package com.singularityuniverse.prometheus.entity
 
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.io.OutputStream
 import java.net.URI
 
@@ -11,29 +13,48 @@ class Project(
     val modelFileSize: Long,
     val lastModified: Long
 ) {
+
+    /**
+     * metadata content:
+     * ```
+     * createdAt = 1749191842997
+     * version = 1.0
+     * modelName = Lilith
+     * nodesPerLayer = 100
+     * layerCount = 100
+     * totalParameters = 10000
+     * biasMode = Random
+     * ```
+     */
     val metadata: Map<String, String> by lazy {
         runCatching {
             val metadataFile = File(File(path), "metadata.txt")
-            if (metadataFile.exists() && metadataFile.isFile) {
-                metadataFile.readLines()
-                    .mapNotNull { line ->
-                        val trimmedLine = line.trim()
-                        if (trimmedLine.isNotEmpty() && trimmedLine.contains("=")) {
-                            val parts = trimmedLine.split("=", limit = 2)
-                            if (parts.size == 2) {
-                                parts[0].trim() to parts[1].trim()
-                            } else null
-                        } else null
-                    }.toMap()
-            } else {
-                emptyMap()
+
+            check(metadataFile.exists() && metadataFile.isFile) {
+                return@lazy mapOf()
             }
-        }.getOrElse { 
-            emptyMap() 
+
+            metadataFile.readLines()
+                .mapNotNull { line ->
+                    val trimmedLine = line.trim()
+                    check(trimmedLine.isNotEmpty() && trimmedLine.contains("=")) {
+                        return@mapNotNull null
+                    }
+
+                    val parts = trimmedLine.split("=", limit = 2)
+
+                    check(parts.size == 2) {
+                        return@mapNotNull null
+                    }
+
+                    parts[0].trim() to parts[1].trim()
+                }.toMap()
+        }.getOrElse {
+            emptyMap()
         }
     }
-    val biasOs: OutputStream get() = FileOutputStream(File(File(path), "bias"))
-    val weightsOs: OutputStream get() = FileOutputStream(File(File(path), "weights"))
+    val biasIs: InputStream get() = FileInputStream(File(File(path), "bias"))
+    val weightsIs: InputStream get() = FileInputStream(File(File(path), "weights"))
 }
 
 /**

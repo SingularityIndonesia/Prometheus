@@ -53,7 +53,6 @@ fun CreateModelFormFields(
         item {
             BiasConfigurationField(
                 biasMode = state.initialBiasMode,
-                determinedBias = state.determinedBias,
                 onBiasModeChange = { mode ->
                     state.initialBiasMode = mode
                 },

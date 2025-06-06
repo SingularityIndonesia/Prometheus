@@ -16,7 +16,7 @@ class CreateModelFormState {
     var neuronPerLayer by mutableStateOf("1000")
     var layerCount by mutableStateOf("1000")
     var initialBiasMode by mutableStateOf("Random")
-    var determinedBias by mutableStateOf<Double?>(null)
+    var determinedBias by mutableStateOf<Float?>(null)
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
     val totalParameter
@@ -82,7 +82,7 @@ class CreateModelFormState {
                             repeat(neuronsPerLayer) {
                                 val biasValue = when (initialBiasMode) {
                                     "Determined" -> (determinedBias ?: 0.0).toFloat()
-                                    else -> Random.Default.nextDouble(-1.0, 1.0).toFloat()
+                                    else -> Random.Default.nextFloat()
                                 }
                                 layerBuffer.putFloat(biasValue)
                             }
@@ -111,7 +111,7 @@ class CreateModelFormState {
 
                             // Fill buffer with weight values
                             repeat(currentLayerSize * nextLayerSize) {
-                                val weightValue = Random.Default.nextDouble(-1.0, 1.0).toFloat()
+                                val weightValue = Random.Default.nextFloat()
                                 weightBuffer.putFloat(weightValue)
                             }
 
@@ -125,13 +125,13 @@ class CreateModelFormState {
                 metadataFile.bufferedWriter().use { writer ->
                     writer.appendLine("createdAt = ${System.currentTimeMillis()}")
                     writer.appendLine("version = 1.0")
-                    writer.appendLine("modelName = ${modelName}")
+                    writer.appendLine("modelName = $modelName")
                     writer.appendLine("nodesPerLayer = $neuronsPerLayer")
                     writer.appendLine("layerCount = $layers")
                     writer.appendLine("totalParameters = ${neuronsPerLayer * layers}")
-                    writer.appendLine("biasMode = ${initialBiasMode}")
+                    writer.appendLine("biasMode = $initialBiasMode")
                     if (initialBiasMode == "Determined") {
-                        writer.appendLine("biasValue = ${determinedBias}")
+                        writer.appendLine("biasValue = $determinedBias")
                     }
                     writer.appendLine()
                 }

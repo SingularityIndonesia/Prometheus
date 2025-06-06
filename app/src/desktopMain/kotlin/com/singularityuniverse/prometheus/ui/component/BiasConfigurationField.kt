@@ -11,9 +11,8 @@ import androidx.compose.ui.text.input.KeyboardType
 @Composable
 fun BiasConfigurationField(
     biasMode: String,
-    determinedBias: Double?,
     onBiasModeChange: (String) -> Unit,
-    onDeterminedBiasChange: (Double?) -> Unit,
+    onDeterminedBiasChange: (Float?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -60,7 +59,7 @@ fun BiasConfigurationField(
                             onDeterminedBiasChange(null)
                         }
                         if (option == "Determined") {
-                            onDeterminedBiasChange(0.0)
+                            onDeterminedBiasChange(0f)
                         }
                     }
                 )
@@ -71,8 +70,8 @@ fun BiasConfigurationField(
 
 @Composable
 fun DeterminedBiasValueField(
-    value: Double?,
-    onValueChange: (Double?) -> Unit,
+    value: Float?,
+    onValueChange: (Float?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
@@ -81,7 +80,7 @@ fun DeterminedBiasValueField(
         value = value?.toString() ?: "",
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         onValueChange = { input ->
-            onValueChange(input.toDoubleOrNull())
+            input.toFloatOrNull()?.let { onValueChange(it) }
         },
         isError = value == null,
         supportingText = {
