@@ -18,7 +18,7 @@ object GnuplotGenerator {
                 val layerCount = metadata["layerCount"]?.toInt() ?: 0
 
                 // Generate data files
-                val projectPath = File(project.path)
+                val projectPath = File(project.uri)
                 val gnuPlotDir = File(projectPath, "gnuplot/")
                 if (!gnuPlotDir.exists() || !gnuPlotDir.isDirectory) {
                     gnuPlotDir.mkdir()

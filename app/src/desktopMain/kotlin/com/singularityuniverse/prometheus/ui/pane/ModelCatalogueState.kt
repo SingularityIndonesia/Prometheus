@@ -7,7 +7,6 @@ import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.scanForProjects
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.awt.Desktop
 import java.io.File
 
 class ModelCatalogueState {
@@ -30,7 +29,7 @@ class ModelCatalogueState {
     suspend fun deleteProject(project: Project) {
         withContext(Dispatchers.IO) {
             try {
-                val projectDir = File(project.path)
+                val projectDir = File(project.uri)
                 if (projectDir.exists() && projectDir.isDirectory) {
                     projectDir.deleteRecursively()
                 }

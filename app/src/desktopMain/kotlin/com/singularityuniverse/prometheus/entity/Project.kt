@@ -5,7 +5,7 @@ import java.net.URI
 
 class Project(
     val name: String,
-    val path: URI,
+    val uri: URI,
     val modelFileSize: Long,
     val lastModified: Long
 ) {
@@ -24,7 +24,7 @@ class Project(
      */
     val metadata: Map<String, String> by lazy {
         runCatching {
-            val metadataFile = File(File(path), "metadata.txt")
+            val metadataFile = File(File(uri), "metadata.txt")
 
             check(metadataFile.exists() && metadataFile.isFile) {
                 return@lazy mapOf()
@@ -49,8 +49,8 @@ class Project(
             emptyMap()
         }
     }
-    val biasFile: File by lazy { File(File(path), "bias") }
-    val weightFile: File by lazy { File(File(path), "weights") }
+    val biasFile: File by lazy { File(File(uri), "bias") }
+    val weightFile: File by lazy { File(File(uri), "weights") }
 }
 
 /**
@@ -77,7 +77,7 @@ fun scanForProjects(): List<Project> {
                 if (metadata.exists() && metadata.isFile) {
                     Project(
                         name = projectDir.name,
-                        path = projectDir.toURI(),
+                        uri = projectDir.toURI(),
                         modelFileSize = modelSize,
                         lastModified = weight.lastModified()
                     )
@@ -111,7 +111,7 @@ fun getProjectByName(name: String): Result<Project> {
         if (metadata.exists() && metadata.isFile) {
             Project(
                 name = targetProjectDir.name,
-                path = targetProjectDir.toURI(),
+                uri = targetProjectDir.toURI(),
                 modelFileSize = modelSize,
                 lastModified = weight.lastModified()
             )

@@ -16,7 +16,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.nio.ByteBuffer
+import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.math.sqrt
 
@@ -61,8 +63,6 @@ class LandscapeState(val project: Project) {
                 modelStats = calculateModelStats()
                 dataValidated = true
                 isLoading = false
-            }.onSuccess {
-                // excetute the g
             }.onFailure { e ->
                 error = "Failed to validate model data: ${e.message}"
                 isLoading = false
@@ -152,25 +152,72 @@ class LandscapeState(val project: Project) {
         )
     }
 
-    suspend fun generatePlotScript() = withContext(Dispatchers.IO) {
+    suspend fun generatePlotScript(): Unit = withContext(Dispatchers.IO) {
         isGeneratingScript = true
-        scope.launch {
-            runCatching {
-                val success = GnuplotGenerator.generateGnuplotScript(project)
-                scriptGenerated = success
-                if (!success) {
-                    error = "Failed to generate gnuplot script"
-                }
-            }.onFailure { e ->
-                error = "Error generating script: ${e.message}"
+        runCatching {
+            val success = GnuplotGenerator.generateGnuplotScript(project)
+            scriptGenerated = success
+            if (!success) {
+                error = "Failed to generate gnuplot script"
             }
-
-            isGeneratingScript = false
+        }.onFailure { e ->
+            error = "Error generating script: ${e.message}"
         }
+
+        isGeneratingScript = false
     }
 
-    suspend fun executePlotScript() = withContext(Dispatchers.Default) {
-        TODO("Execute plot script via shell")
+    suspend fun executePlotScript(): Unit = withContext(Dispatchers.IO) {
+        runCatching {
+            val gnuplotDir = File(File(project.uri), "gnuplot")
+            val scriptFile = File(gnuplotDir, "gnuplot-script")
+            if (!scriptFile.exists()) {
+                error = "Gnuplot script not found at: ${scriptFile.absolutePath}"
+                return@runCatching
+            }
+
+            // Make the script executable on Unix-like systems
+            if (!System.getProperty("os.name").lowercase().contains("windows")) {
+                ProcessBuilder("chmod", "+x", scriptFile.absolutePath)
+                    .start()
+                    .waitFor()
+            }
+
+            // Execute the gnuplot script
+            val processBuilder = if (System.getProperty("os.name").lowercase().contains("windows")) {
+                ProcessBuilder("cmd", "/c", scriptFile.absolutePath)
+            } else {
+                ProcessBuilder("bash", "-c", "cd \"${gnuplotDir.absolutePath}\" && ./gnuplot-script")
+            }
+
+            processBuilder.directory()
+            val process = processBuilder.start()
+
+            // Wait for completion with timeout
+            val completed = process.waitFor(30, TimeUnit.SECONDS)
+
+            if (!completed) {
+                process.destroyForcibly()
+                error = "Gnuplot execution timed out after 30 seconds"
+            } else if (process.exitValue() != 0) {
+                val errorOutput = process.errorStream.bufferedReader().readText()
+                error = "Gnuplot execution failed with exit code ${process.exitValue()}: $errorOutput"
+            } else {
+                // Success - check if output files were generated in the gnuplot directory
+                val outputFiles = gnuplotDir.listFiles { file ->
+                    file.extension.lowercase() in listOf("png", "jpg", "jpeg", "svg", "pdf", "eps")
+                }
+
+                if (outputFiles?.isNotEmpty() == true) {
+                    error = null // Clear any previous errors
+                    println("Gnuplot execution completed successfully. Generated files: ${outputFiles.map { it.name }}")
+                } else {
+                    error = "Gnuplot completed but no output files were generated"
+                }
+            }
+        }.onFailure { e ->
+            error = "Failed to execute gnuplot script: ${e.message}"
+        }
     }
 }
 
@@ -226,12 +273,12 @@ fun Landscape(state: LandscapeState) {
                 if (state.scriptGenerated) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Gnuplot script generated at: ${state.project.path}/gnuplot-script",
+                        "Gnuplot script generated at: ${state.project.uri}gnuplot/gnuplot-script",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        "Run: cd \"${state.project.path}\" && ./gnuplot-script",
+                        "Run: cd \"${state.project.uri}gnuplot\" && ./gnuplot-script",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary
                     )

@@ -9,7 +9,7 @@ import java.io.File
 suspend fun openProjectFolder(project: Project) {
     withContext(Dispatchers.IO) {
         try {
-            val projectDir = File(project.path)
+            val projectDir = File(project.uri)
             if (projectDir.exists() && Desktop.isDesktopSupported()) {
                 Desktop.getDesktop().open(projectDir)
             }
