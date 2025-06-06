@@ -9,7 +9,7 @@ import java.io.File
 import java.io.IOException
 import java.net.URI
 import java.nio.ByteBuffer
-import kotlin.random.Random
+import kotlin.random.Random.Default.nextDouble
 
 class CreateModelFormState {
     var modelName by mutableStateOf("")
@@ -82,7 +82,7 @@ class CreateModelFormState {
                             repeat(neuronsPerLayer) {
                                 val biasValue = when (initialBiasMode) {
                                     "Determined" -> (determinedBias ?: 0.0).toFloat()
-                                    else -> Random.Default.nextFloat()
+                                    else -> nextDouble(-1.0, 1.0).toFloat()
                                 }
                                 layerBuffer.putFloat(biasValue)
                             }
@@ -111,7 +111,7 @@ class CreateModelFormState {
 
                             // Fill buffer with weight values
                             repeat(currentLayerSize * nextLayerSize) {
-                                val weightValue = Random.Default.nextFloat()
+                                val weightValue = nextDouble(-1.0, 1.0).toFloat()
                                 weightBuffer.putFloat(weightValue)
                             }
 

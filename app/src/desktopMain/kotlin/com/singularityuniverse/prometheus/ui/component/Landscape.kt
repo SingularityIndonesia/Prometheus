@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.singularityuniverse.prometheus.entity.Project
+import com.singularityuniverse.prometheus.utils.GnuplotGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -20,6 +21,7 @@ import kotlin.math.sqrt
 
 @Composable
 fun Landscape(project: Project) {
+    val scope = rememberCoroutineScope()
     val metadata = project.metadata
     val neuronsPerLayer = metadata["neuronsPerLayer"]?.toInt() ?: 0
     val layerCount = metadata["layerCount"]?.toInt() ?: 0
@@ -102,7 +104,7 @@ fun Landscape(project: Project) {
                 Button(
                     onClick = {
                         isGeneratingScript = true
-                        kotlinx.coroutines.GlobalScope.launch {
+                        scope.launch {
                             try {
                                 val success = GnuplotGenerator.generateGnuplotScript(
                                     project = project,
