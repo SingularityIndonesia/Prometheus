@@ -21,13 +21,17 @@ object GnuplotGenerator {
 
                 // Generate data files
                 val projectPath = File(project.path)
+                val gnuPlotDir = File(projectPath, "gnuplot/")
+                if (!gnuPlotDir.exists() || !gnuPlotDir.isDirectory) {
+                    gnuPlotDir.mkdir()
+                }
 
                 // Create bias data file
-                val biasDataFile = File(projectPath, "gnuplot/bias_data.txt")
+                val biasDataFile = File(gnuPlotDir, "bias_data.txt")
                 biasDataFile.writeText(biasData.joinToString("\n"))
 
                 // Create bias matrix file for heatmap
-                val biasMatrixFile = File(projectPath, "gnuplot/bias_matrix.txt")
+                val biasMatrixFile = File(gnuPlotDir, "bias_matrix.txt")
                 val biasMatrix = StringBuilder()
                 for (layer in 0 until layerCount) {
                     val rowData = mutableListOf<String>()
@@ -45,7 +49,7 @@ object GnuplotGenerator {
 
                 // Create weight data file if available
                 if (weightData != null && weightData.isNotEmpty()) {
-                    val weightDataFile = File(projectPath, "gnuplot/weight_data.txt")
+                    val weightDataFile = File(gnuPlotDir, "weight_data.txt")
                     weightDataFile.writeText(weightData.joinToString("\n"))
                 }
 
@@ -224,7 +228,7 @@ object GnuplotGenerator {
                 """.trimIndent()
 
                 // Write gnuplot script
-                val scriptFile = File(projectPath, "gnuplot/gnuplot-script")
+                val scriptFile = File(gnuPlotDir, "gnuplot-script")
                 scriptFile.writeText(gnuplotScript)
                 scriptFile.setExecutable(true)
 
