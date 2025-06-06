@@ -11,8 +11,8 @@ import prometheus.app.generated.resources.ic_folder
 @Composable
 fun CommonTopAppBar(
     titleText: String? = null,
+    openDir: (() -> Unit)? = null,
     onNavigateBack: (() -> Unit)? = null,
-    openDir: (() -> Unit)? = null
 ) {
     TopAppBar(
         title = {
