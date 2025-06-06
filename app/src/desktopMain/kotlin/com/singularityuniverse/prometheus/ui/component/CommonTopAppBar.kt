@@ -3,8 +3,8 @@ package com.singularityuniverse.prometheus.ui.component
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import org.jetbrains.compose.resources.painterResource
-import prometheus.composeapp.generated.resources.Res
-import prometheus.composeapp.generated.resources.ic_back
+import prometheus.app.generated.resources.Res
+import prometheus.app.generated.resources.ic_back
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

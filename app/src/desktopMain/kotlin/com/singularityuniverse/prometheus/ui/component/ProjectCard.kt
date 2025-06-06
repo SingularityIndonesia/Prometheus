@@ -10,10 +10,10 @@ import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.utils.formatDate
 import com.singularityuniverse.prometheus.utils.formatFileSize
 import org.jetbrains.compose.resources.painterResource
-import prometheus.composeapp.generated.resources.Res
-import prometheus.composeapp.generated.resources.ic_delete
-import prometheus.composeapp.generated.resources.ic_folder
-import prometheus.composeapp.generated.resources.ic_more_vert
+import prometheus.app.generated.resources.Res
+import prometheus.app.generated.resources.ic_delete
+import prometheus.app.generated.resources.ic_folder
+import prometheus.app.generated.resources.ic_more_vert
 
 @Composable
 fun ProjectCard(
