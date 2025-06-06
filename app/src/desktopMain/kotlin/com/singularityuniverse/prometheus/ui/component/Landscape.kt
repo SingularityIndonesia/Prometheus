@@ -61,6 +61,8 @@ class LandscapeState(val project: Project) {
                 modelStats = calculateModelStats()
                 dataValidated = true
                 isLoading = false
+            }.onSuccess {
+                // excetute the g
             }.onFailure { e ->
                 error = "Failed to validate model data: ${e.message}"
                 isLoading = false
@@ -149,6 +151,27 @@ class LandscapeState(val project: Project) {
             weightMax = weightStats?.get("max") as? Float
         )
     }
+
+    suspend fun generatePlotScript() = withContext(Dispatchers.IO) {
+        isGeneratingScript = true
+        scope.launch {
+            runCatching {
+                val success = GnuplotGenerator.generateGnuplotScript(project)
+                scriptGenerated = success
+                if (!success) {
+                    error = "Failed to generate gnuplot script"
+                }
+            }.onFailure { e ->
+                error = "Error generating script: ${e.message}"
+            }
+
+            isGeneratingScript = false
+        }
+    }
+
+    suspend fun executePlotScript() = withContext(Dispatchers.Default) {
+        TODO("Execute plot script via shell")
+    }
 }
 
 @Composable
@@ -184,19 +207,9 @@ fun Landscape(state: LandscapeState) {
                 // Generate Gnuplot Script Button
                 Button(
                     onClick = {
-                        state.isGeneratingScript = true
                         scope.launch {
-                            try {
-                                val success = GnuplotGenerator.generateGnuplotScript(state.project)
-                                state.scriptGenerated = success
-                                if (!success) {
-                                    state.error = "Failed to generate gnuplot script"
-                                }
-                            } catch (e: Exception) {
-                                state.error = "Error generating script: ${e.message}"
-                            } finally {
-                                state.isGeneratingScript = false
-                            }
+                            state.generatePlotScript()
+                            state.executePlotScript()
                         }
                     },
                     enabled = state.dataValidated && !state.isGeneratingScript
