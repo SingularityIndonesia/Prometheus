@@ -43,7 +43,11 @@ fun CreateModelFormFields(
         item {
             LayerCountField(
                 value = state.layerCount,
-                totalParameter = state.totalParameter,
+                totalParameter = state.totalParameter
+                    .reversed()
+                    .chunked(3)
+                    .reversed()
+                    .joinToString(" ") { it.reversed() },
                 onValueChange = { value ->
                     state.layerCount = value
                 }

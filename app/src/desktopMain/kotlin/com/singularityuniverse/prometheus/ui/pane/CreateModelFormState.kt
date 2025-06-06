@@ -9,12 +9,13 @@ import java.io.File
 import java.io.IOException
 import java.net.URI
 import java.nio.ByteBuffer
+import kotlin.math.pow
 import kotlin.random.Random.Default.nextDouble
 
 class CreateModelFormState {
     var modelName by mutableStateOf("")
     var neuronsPerLayer by mutableStateOf("1000")
-    var layerCount by mutableStateOf("1000")
+    var layerCount by mutableStateOf("10")
     var initialBiasMode by mutableStateOf("Random")
     var determinedBias by mutableStateOf<Float?>(null)
     var isLoading by mutableStateOf(false)
@@ -23,15 +24,24 @@ class CreateModelFormState {
         get() = run {
             val neuronsPerLayer = neuronsPerLayer.toIntOrNull() ?: 0
             val layerCount = layerCount.toIntOrNull() ?: 0
-            val totalParams = neuronsPerLayer * layerCount
-
-            // Format number with spaces as thousand separators
+            val layerSizes = List(layerCount) { neuronsPerLayer }
+            val totalParams = calculateTotalParameter(layerSizes)
             totalParams.toString()
-                .reversed()
-                .chunked(3)
-                .joinToString(" ")
-                .reversed()
         }
+
+    fun calculateTotalParameter(layerSizes: List<Int>): Long {
+        var totalParameter = 0L
+
+        for (i in 0 until layerSizes.size - 1) {
+            val from = layerSizes[i]
+            val to = layerSizes[i + 1]
+            val weights = from.toLong() * to
+            val biases = to.toLong()
+            totalParameter += weights + biases
+        }
+
+        return totalParameter
+    }
 
     val formIsValid
         get() = !isLoading &&
@@ -70,7 +80,6 @@ class CreateModelFormState {
                 // Write bias values to binary file
                 val biasFile = File(projectDir, "bias")
                 biasFile.outputStream()
-                    .buffered()
                     .use { outputStream ->
                         // Create buffer for one layer worth of floats (4 bytes per float)
                         val layerBuffer = ByteBuffer.allocate(neuronsPerLayer * 4)
@@ -99,7 +108,6 @@ class CreateModelFormState {
                 // Write weight values to binary file
                 val weightsFile = File(projectDir, "weights")
                 weightsFile.outputStream()
-                    .buffered()
                     .use { outputStream ->
                         // For each layer (except the last one), create connections to the next layer
                         repeat(layers - 1) { layerIndex ->
@@ -128,7 +136,7 @@ class CreateModelFormState {
                     writer.appendLine("modelName = $modelName")
                     writer.appendLine("neuronsPerLayer = $neuronsPerLayer")
                     writer.appendLine("layerCount = $layers")
-                    writer.appendLine("totalParameters = ${neuronsPerLayer * layers}")
+                    writer.appendLine("totalParameters = $totalParameter")
                     writer.appendLine("biasMode = $initialBiasMode")
                     if (initialBiasMode == "Determined") {
                         writer.appendLine("biasValue = $determinedBias")
@@ -139,10 +147,9 @@ class CreateModelFormState {
                 // Create Uri for the model file
                 metadataFile.toURI()
             }
+        }.onFailure { e ->
+            errorMessage = e.message ?: e.cause?.message ?: e::class.qualifiedName
+            isLoading = false
         }
-            .onFailure { e ->
-                errorMessage = e.message
-                isLoading = false
-            }
     }
 }
