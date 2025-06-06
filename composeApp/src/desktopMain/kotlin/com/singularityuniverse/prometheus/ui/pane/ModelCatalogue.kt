@@ -1,14 +1,15 @@
 package com.singularityuniverse.prometheus.ui.pane
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import java.awt.Desktop
-import java.io.File
 import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.scanForProjects
+import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
 import com.singularityuniverse.prometheus.ui.component.DeleteProjectDialog
 import com.singularityuniverse.prometheus.ui.component.ModelCatalogueBottomBar
 import com.singularityuniverse.prometheus.ui.component.ProjectsList
@@ -17,6 +18,8 @@ import com.singularityuniverse.prometheus.utils.to
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.awt.Desktop
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,11 +103,7 @@ fun ModelCatalogue(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text("Projects")
-                },
-            )
+            CommonTopAppBar(titleText = "Projects")
         },
         bottomBar = {
             ModelCatalogueBottomBar(

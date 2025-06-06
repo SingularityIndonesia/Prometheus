@@ -1,8 +1,7 @@
 package com.singularityuniverse.prometheus.utils
 
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 
 /**

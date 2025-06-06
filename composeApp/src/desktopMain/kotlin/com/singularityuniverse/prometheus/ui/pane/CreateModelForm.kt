@@ -1,12 +1,14 @@
 package com.singularityuniverse.prometheus.ui.pane
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
 import com.singularityuniverse.prometheus.ui.component.CreateModelButton
 import com.singularityuniverse.prometheus.ui.component.CreateModelFormFields
 import com.singularityuniverse.prometheus.ui.component.ErrorMessageCard
@@ -14,9 +16,6 @@ import com.singularityuniverse.prometheus.utils.LocalWindowController
 import com.singularityuniverse.prometheus.utils.runInMainThread
 import com.singularityuniverse.prometheus.utils.to
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.painterResource
-import prometheus.composeapp.generated.resources.Res
-import prometheus.composeapp.generated.resources.ic_back
 import java.net.URI
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,23 +36,11 @@ fun CreateModelForm(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text("Create Model")
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            onReturn.invoke(null)
-                        }
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_back),
-                            contentDescription = "Go back"
-                        )
-                    }
-                }
-            )
+            CommonTopAppBar(
+                titleText = "Create Model"
+            ) {
+                onReturn.invoke(null)
+            }
         }
     ) { paddingValues ->
         Column(
