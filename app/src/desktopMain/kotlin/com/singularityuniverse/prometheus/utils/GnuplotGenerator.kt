@@ -5,7 +5,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.ByteBuffer
-import kotlin.math.min
 import kotlin.math.sqrt
 
 object GnuplotGenerator {
@@ -25,17 +24,12 @@ object GnuplotGenerator {
                 }
 
                 // Read bias data from file and create data files
-                val (biasDataFile, biasStats) = createBiasDataFiles(
+                val biasStats = createBiasDataFiles(
                     project.biasFile,
                     gnuPlotDir,
                     neuronsPerLayer,
                     layerCount
                 )
-
-                // Read weight data from file if available
-                val weightStats = if (project.weightFile.exists()) {
-                    createWeightDataFile(project.weightFile, gnuPlotDir)
-                } else null
 
                 // Fix palette range to ensure monotonic gradient
                 val paletteMin = biasStats.min.toDouble()
@@ -108,7 +102,6 @@ object GnuplotGenerator {
                     print "Data files:"
                     print "  - bias_data.txt (bias values)"
                     print "  - bias_matrix.txt (bias matrix for heatmap)"
-                    ${if (weightStats != null) "print \"  - weight_data.txt (weight values)\"" else ""}
                 """.trimIndent()
 
                 // Write gnuplot script
@@ -133,21 +126,12 @@ object GnuplotGenerator {
         val count: Int
     )
 
-    private data class WeightStats(
-        val mean: Double,
-        val stdDev: Double,
-        val min: Float,
-        val max: Float,
-        val sampleSize: Int
-    )
-
     private fun createBiasDataFiles(
         biasFile: File,
         outputDir: File,
         neuronsPerLayer: Int,
         layerCount: Int
-    ): Pair<File, BiasStats> {
-        val biasDataFile = File(outputDir, "bias_data.txt")
+    ): BiasStats {
         val biasMatrixFile = File(outputDir, "bias_matrix.txt")
 
         // Stream process bias file to avoid loading all data into memory
@@ -182,9 +166,6 @@ object GnuplotGenerator {
         } else 0.0
         val biasStdDev = sqrt(biasVariance)
 
-        // Write bias data file
-        biasDataFile.writeText(biasData.joinToString("\n"))
-
         // Create bias matrix file for heatmap
         val biasMatrix = StringBuilder()
         for (layer in 0 until layerCount) {
@@ -209,51 +190,6 @@ object GnuplotGenerator {
             count = biasData.size
         )
 
-        return Pair(biasDataFile, stats)
-    }
-
-    private fun createWeightDataFile(weightFile: File, outputDir: File): WeightStats? {
-        try {
-            val weightDataFile = File(outputDir, "weight_data.txt")
-            val maxSampleSize = 100000 // Limit sample size for performance
-            val weightSample = mutableListOf<Float>()
-
-            weightFile.inputStream().buffered().use { inputStream ->
-                val maxBytes = min(maxSampleSize * 4, inputStream.available())
-                val buffer = ByteArray(maxBytes)
-                val bytesRead = inputStream.read(buffer)
-
-                if (bytesRead > 0) {
-                    val byteBuffer = ByteBuffer.wrap(buffer, 0, bytesRead)
-                    while (byteBuffer.remaining() >= 4 && weightSample.size < maxSampleSize) {
-                        weightSample.add(byteBuffer.getFloat())
-                    }
-                }
-            }
-
-            if (weightSample.isNotEmpty()) {
-                // Write sampled weight data
-                weightDataFile.writeText(weightSample.joinToString("\n"))
-
-                // Calculate statistics
-                val weightMean = weightSample.average()
-                val weightVariance = weightSample.map { (it - weightMean) * (it - weightMean) }.average()
-                val weightStdDev = sqrt(weightVariance)
-                val weightMin = weightSample.minOrNull() ?: 0f
-                val weightMax = weightSample.maxOrNull() ?: 0f
-
-                return WeightStats(
-                    mean = weightMean,
-                    stdDev = weightStdDev,
-                    min = weightMin,
-                    max = weightMax,
-                    sampleSize = weightSample.size
-                )
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return null
+        return stats
     }
 }
