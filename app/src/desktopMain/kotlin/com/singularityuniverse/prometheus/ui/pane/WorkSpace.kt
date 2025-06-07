@@ -53,7 +53,7 @@ fun WorkSpace(state: WorkSpaceState, onNavigateBack: () -> Unit) {
                 CommonTopAppBar(
                     titleText = title,
                     onNavigateBack = onNavigateBack,
-                    openDir = {
+                    onOpenFolder = {
                         scope.launch {
                             openProjectFolder(state.project!!)
                         }

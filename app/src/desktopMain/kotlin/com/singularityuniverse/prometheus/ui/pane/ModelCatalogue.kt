@@ -1,12 +1,7 @@
 package com.singularityuniverse.prometheus.ui.pane
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -14,7 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.scanForProjects
-import com.singularityuniverse.prometheus.ui.component.*
+import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
+import com.singularityuniverse.prometheus.ui.component.DeleteProjectDialog
+import com.singularityuniverse.prometheus.ui.component.LightSeparator
+import com.singularityuniverse.prometheus.ui.component.ProjectsList
 import com.singularityuniverse.prometheus.utils.LocalWindowController
 import com.singularityuniverse.prometheus.utils.openProjectFolder
 import com.singularityuniverse.prometheus.utils.to
@@ -63,19 +61,26 @@ fun ModelCatalogue(
         modifier = modifier,
         topBar = {
             Column {
-                CommonTopAppBar(titleText = "Projects")
+                CommonTopAppBar(
+                    titleText = "Projects",
+                    onRefresh = {
+                        scope.launch {
+                            state.refreshProjects()
+                        }
+                    }
+                )
                 LightSeparator()
             }
         },
         bottomBar = {
-            ModelCatalogueBottomBar(
-                onRefresh = {
-                    scope.launch {
-                        state.refreshProjects()
-                    }
-                },
-                onCreateNewModel = onCreateNewModel
-            )
+            Button(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                onClick = onCreateNewModel
+            ) {
+                Text("New Model")
+            }
         }
     ) {
         Surface(

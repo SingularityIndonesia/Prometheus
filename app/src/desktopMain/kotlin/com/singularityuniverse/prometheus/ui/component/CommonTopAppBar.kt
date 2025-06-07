@@ -6,13 +6,15 @@ import org.jetbrains.compose.resources.painterResource
 import prometheus.app.generated.resources.Res
 import prometheus.app.generated.resources.ic_back
 import prometheus.app.generated.resources.ic_folder
+import prometheus.app.generated.resources.ic_refresh
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommonTopAppBar(
     titleText: String? = null,
-    openDir: (() -> Unit)? = null,
+    onOpenFolder: (() -> Unit)? = null,
     onNavigateBack: (() -> Unit)? = null,
+    onRefresh: (() -> Unit)? = null
 ) {
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
@@ -39,7 +41,7 @@ fun CommonTopAppBar(
             }
         },
         actions = {
-            openDir?.let {
+            onOpenFolder?.let {
                 IconButton(
                     onClick = {
                         it.invoke()
@@ -48,6 +50,19 @@ fun CommonTopAppBar(
                     Icon(
                         painter = painterResource(Res.drawable.ic_folder),
                         contentDescription = "Open dir"
+                    )
+                }
+            }
+
+            onRefresh?.let {
+                IconButton(
+                    onClick = {
+                        it.invoke()
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_refresh),
+                        contentDescription = "Refresh"
                     )
                 }
             }

@@ -30,11 +30,6 @@ fun ModelCatalogueBottomBar(
             Text("Refresh")
         }
 
-        Button(
-            modifier = Modifier.weight(1f),
-            onClick = onCreateNewModel
-        ) {
-            Text("New Model")
-        }
+
     }
 }
