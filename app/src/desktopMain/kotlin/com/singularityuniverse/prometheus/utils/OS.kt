@@ -1,4 +1,4 @@
-package com.singularityuniverse.prometheus.ui.pane
+package com.singularityuniverse.prometheus.utils
 
 import com.singularityuniverse.prometheus.entity.Project
 import kotlinx.coroutines.Dispatchers

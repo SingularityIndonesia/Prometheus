@@ -16,6 +16,7 @@ import com.singularityuniverse.prometheus.ui.component.DeleteProjectDialog
 import com.singularityuniverse.prometheus.ui.component.ModelCatalogueBottomBar
 import com.singularityuniverse.prometheus.ui.component.ProjectsList
 import com.singularityuniverse.prometheus.utils.LocalWindowController
+import com.singularityuniverse.prometheus.utils.openProjectFolder
 import com.singularityuniverse.prometheus.utils.to
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

@@ -1,6 +1,5 @@
 package com.singularityuniverse.prometheus.ui.pane
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CircularProgressIndicator
@@ -16,14 +15,13 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.singularityuniverse.prometheus.entity.getProjectByName
 import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
 import com.singularityuniverse.prometheus.ui.component.Landscape
 import com.singularityuniverse.prometheus.ui.component.LandscapeState
 import com.singularityuniverse.prometheus.utils.LocalWindowController
+import com.singularityuniverse.prometheus.utils.openProjectFolder
 import kotlinx.coroutines.launch
-import org.jetbrains.skia.Surface
 
 class WorkSpaceState(projectName: String) {
     var error by mutableStateOf("")
