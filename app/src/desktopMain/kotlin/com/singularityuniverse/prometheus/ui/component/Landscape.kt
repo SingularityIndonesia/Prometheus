@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -51,6 +50,12 @@ fun Landscape(
                     contentDescription = null
                 )
             }
+
+        if (state.isLoading)
+            Text(
+                text = state.loadingState,
+                style = MaterialTheme.typography.labelMedium
+            )
 
         if (state.error != null)
             Card(
@@ -121,7 +126,7 @@ fun Landscape(
             }
 
             if (state.isLoading)
-                Text("Loading model data...")
+                Text(state.loadingState.lines().lastOrNull().orEmpty())
         }
     }
 }
