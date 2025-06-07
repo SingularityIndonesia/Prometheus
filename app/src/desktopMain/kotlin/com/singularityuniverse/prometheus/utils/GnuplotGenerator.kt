@@ -99,9 +99,6 @@ object GnuplotGenerator {
                     print "Generated files:"
                     print "  - bias_heatmap.png (2D bias heatmap)"
                     print "  - bias_surface.png (3D bias surface)"
-                    print "Data files:"
-                    print "  - bias_data.txt (bias values)"
-                    print "  - bias_matrix.txt (bias matrix for heatmap)"
                 """.trimIndent()
 
                 // Write gnuplot script
@@ -123,18 +120,18 @@ object GnuplotGenerator {
         val stdDev: Double,
         val min: Float,
         val max: Float,
-        val count: Int
     )
 
     private fun biasStats(
         biasFile: File,
     ): BiasStats {
         // Stream process bias file to avoid loading all data into memory
-        // TODO: do not buffer, calculate everything directly
-        val biasData = mutableListOf<Float>()
+        // Calculate statistics directly without buffering all data
         var biasSum = 0.0
+        var biasSumSquares = 0.0
         var biasMin = Float.MAX_VALUE
         var biasMax = Float.MIN_VALUE
+        var count = 0
 
         biasFile.inputStream().buffered().use { inputStream ->
             val buffer = ByteArray(8192) // 8KB buffer
@@ -148,26 +145,27 @@ object GnuplotGenerator {
 
                 while (byteBuffer.remaining() >= 4) {
                     val value = byteBuffer.getFloat()
-                    biasData.add(value)
                     biasSum += value
+                    biasSumSquares += value * value
+                    count++
                     if (value < biasMin) biasMin = value
                     if (value > biasMax) biasMax = value
                 }
             }
         }
 
-        val biasMean = if (biasData.isNotEmpty()) biasSum / biasData.size else 0.0
-        val biasVariance = if (biasData.isNotEmpty()) {
-            biasData.map { (it - biasMean) * (it - biasMean) }.average()
+        // Calculate statistics directly from accumulated values
+        val biasMean = if (count > 0) biasSum / count else 0.0
+        val biasVariance = if (count > 0) {
+            (biasSumSquares / count) - (biasMean * biasMean)
         } else 0.0
-        val biasStdDev = sqrt(biasVariance)
+        val biasStdDev = sqrt(biasVariance.coerceAtLeast(0.0))
 
         val stats = BiasStats(
             mean = biasMean,
             stdDev = biasStdDev,
-            min = if (biasData.isNotEmpty()) biasMin else 0f,
-            max = if (biasData.isNotEmpty()) biasMax else 0f,
-            count = biasData.size
+            min = if (count > 0) biasMin else 0f,
+            max = if (count > 0) biasMax else 0f,
         )
 
         return stats
