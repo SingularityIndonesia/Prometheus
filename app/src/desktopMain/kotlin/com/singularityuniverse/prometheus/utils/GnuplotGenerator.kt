@@ -24,11 +24,8 @@ object GnuplotGenerator {
                 }
 
                 // Read bias data from file and create data files
-                val biasStats = createBiasDataFiles(
-                    project.biasFile,
-                    gnuPlotDir,
-                    neuronsPerLayer,
-                    layerCount
+                val biasStats = biasStats(
+                    biasFile = project.biasFile,
                 )
 
                 // Fix palette range to ensure monotonic gradient
@@ -53,6 +50,9 @@ object GnuplotGenerator {
                     # Generated for model: ${metadata["modelName"] ?: "Unknown"}
                     # Layers: $layerCount, Neurons per Layer: $neuronsPerLayer
                     
+                    layers=$layerCount
+                    neurons=$neuronsPerLayer
+                    
                     # Set terminal and output for heatmap
                     set terminal pngcairo enhanced font "Arial,12" size 1200,800
                     set output 'bias_heatmap.png'
@@ -71,7 +71,7 @@ object GnuplotGenerator {
                     set pm3d interpolate 0,0
                     unset grid
                     
-                    splot 'bias_matrix.txt' matrix with pm3d title "Bias Values"
+                    splot '../bias' binary array=(neurons,layers) format='%float32' endian=big with pm3d title "Bias Values" 
                     
                     # Reset all settings for surface plot
                     reset
@@ -93,7 +93,7 @@ object GnuplotGenerator {
                     set view 60,30
                     set grid
                     
-                    splot 'bias_matrix.txt' matrix with pm3d title "Bias Surface"
+                    splot '../bias' binary array=(neurons,layers) format='%float32' endian=big with pm3d title "Bias Surface"
                     
                     print "Neural network visualization complete!"
                     print "Generated files:"
@@ -126,15 +126,11 @@ object GnuplotGenerator {
         val count: Int
     )
 
-    private fun createBiasDataFiles(
+    private fun biasStats(
         biasFile: File,
-        outputDir: File,
-        neuronsPerLayer: Int,
-        layerCount: Int
     ): BiasStats {
-        val biasMatrixFile = File(outputDir, "bias_matrix.txt")
-
         // Stream process bias file to avoid loading all data into memory
+        // TODO: do not buffer, calculate everything directly
         val biasData = mutableListOf<Float>()
         var biasSum = 0.0
         var biasMin = Float.MAX_VALUE
@@ -165,22 +161,6 @@ object GnuplotGenerator {
             biasData.map { (it - biasMean) * (it - biasMean) }.average()
         } else 0.0
         val biasStdDev = sqrt(biasVariance)
-
-        // Create bias matrix file for heatmap
-        val biasMatrix = StringBuilder()
-        for (layer in 0 until layerCount) {
-            val rowData = mutableListOf<String>()
-            for (neuron in 0 until neuronsPerLayer) {
-                val biasIndex = layer * neuronsPerLayer + neuron
-                if (biasIndex < biasData.size) {
-                    rowData.add(biasData[biasIndex].toString())
-                } else {
-                    rowData.add("0.0")
-                }
-            }
-            biasMatrix.appendLine(rowData.joinToString(" "))
-        }
-        biasMatrixFile.writeText(biasMatrix.toString())
 
         val stats = BiasStats(
             mean = biasMean,
