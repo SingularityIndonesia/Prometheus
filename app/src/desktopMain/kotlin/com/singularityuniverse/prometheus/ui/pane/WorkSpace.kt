@@ -1,11 +1,11 @@
 package com.singularityuniverse.prometheus.ui.pane
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,12 +15,15 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.singularityuniverse.prometheus.entity.getProjectByName
 import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
 import com.singularityuniverse.prometheus.ui.component.Landscape
 import com.singularityuniverse.prometheus.ui.component.LandscapeState
+import com.singularityuniverse.prometheus.ui.component.LightSeparator
 import com.singularityuniverse.prometheus.utils.LocalWindowController
 import com.singularityuniverse.prometheus.utils.openProjectFolder
+import com.singularityuniverse.prometheus.utils.to
 import kotlinx.coroutines.launch
 
 class WorkSpaceState(projectName: String) {
@@ -39,40 +42,49 @@ fun WorkSpace(state: WorkSpaceState, onNavigateBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
+        windowController.setMinimumSize(900.dp to 700.dp)
         windowController.requestFullScreen(true)
     }
 
     Scaffold(
         topBar = {
             val title = state.project?.name ?: "Loading.."
-            CommonTopAppBar(
-                titleText = title,
-                onNavigateBack = onNavigateBack,
-                openDir = {
-                    scope.launch {
-                        openProjectFolder(state.project!!)
+            Column {
+                CommonTopAppBar(
+                    titleText = title,
+                    onNavigateBack = onNavigateBack,
+                    openDir = {
+                        scope.launch {
+                            openProjectFolder(state.project!!)
+                        }
                     }
-                }
-            )
+                )
+                LightSeparator()
+            }
         }
     ) {
         Row(
             modifier = Modifier.padding(it)
         ) {
-            Surface(
-                shadowElevation = 10.dp
-            ) {
-                Navigator(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(260.dp)
-                        .padding(16.dp)
-                )
-            }
+            Navigator(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.background)
+                    .width(72.dp)
+                    .padding(16.dp)
+            )
             ProjectSate(
                 modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surface)
                     .weight(1f)
                     .fillMaxHeight(),
+                state = state
+            )
+            Info(
+                modifier = Modifier
+                    .width(260.dp)
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.background),
                 state = state
             )
         }
@@ -90,6 +102,82 @@ fun Navigator(
     }
 }
 
+
+@Composable
+fun Info(
+    state: WorkSpaceState,
+    modifier: Modifier = Modifier
+) {
+    val metadata = state.project?.metadata ?: return
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        item {
+            Text(
+                "Metadata",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(Modifier.size(8.dp))
+            val modelName = buildAnnotatedString {
+                withStyle(
+                    style = SpanStyle(fontWeight = FontWeight.Bold),
+                ) {
+                    append("Model Name: ")
+                }
+                append(metadata["modelName"])
+                append("\n")
+
+                withStyle(
+                    style = SpanStyle(fontWeight = FontWeight.Bold),
+                ) {
+                    append("Version: ")
+                }
+                append(metadata["version"])
+                append("\n")
+
+                withStyle(
+                    style = SpanStyle(fontWeight = FontWeight.Bold),
+                ) {
+                    append("Neurons PerLayer: ")
+                }
+                append(metadata["neuronsPerLayer"])
+                append("\n")
+
+                withStyle(
+                    style = SpanStyle(fontWeight = FontWeight.Bold),
+                ) {
+                    append("Total Layers: ")
+                }
+                append(metadata["layerCount"])
+                append("\n")
+
+                withStyle(
+                    style = SpanStyle(fontWeight = FontWeight.Bold),
+                ) {
+                    append("Total Parameters: ")
+                }
+                append(metadata["totalParameters"])
+                append("\n")
+
+                withStyle(
+                    style = SpanStyle(fontWeight = FontWeight.Bold),
+                ) {
+                    append("Initial Bias: ")
+                }
+                append(metadata["biasMode"])
+            }
+
+            Text(
+                text = modelName,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    lineHeight = 20.sp,
+                )
+            )
+        }
+    }
+}
+
 @Composable
 fun ProjectSate(
     modifier: Modifier = Modifier,
@@ -97,11 +185,7 @@ fun ProjectSate(
 ) {
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            bottom = 16.dp
-        ),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         if (state.isLoading)
@@ -117,68 +201,6 @@ fun ProjectSate(
 
         // no need to display anything
         if (state.project == null) return@LazyColumn
-
-        item {
-            val metadata = state.project.metadata
-            Text(
-                "Metadata",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Spacer(Modifier.size(8.dp))
-            val modelName = buildAnnotatedString {
-                withStyle(
-                    style = SpanStyle(fontWeight = FontWeight.Bold),
-                ) {
-                    append("Model Name: ")
-                }
-                append(metadata["modelName"])
-                append(", ")
-
-                withStyle(
-                    style = SpanStyle(fontWeight = FontWeight.Bold),
-                ) {
-                    append("Version: ")
-                }
-                append(metadata["version"])
-                append(", ")
-
-                withStyle(
-                    style = SpanStyle(fontWeight = FontWeight.Bold),
-                ) {
-                    append("Neurons PerLayer: ")
-                }
-                append(metadata["neuronsPerLayer"])
-                append(", ")
-
-                withStyle(
-                    style = SpanStyle(fontWeight = FontWeight.Bold),
-                ) {
-                    append("Total Layers: ")
-                }
-                append(metadata["layerCount"])
-                append(", ")
-
-                withStyle(
-                    style = SpanStyle(fontWeight = FontWeight.Bold),
-                ) {
-                    append("Total Parameters: ")
-                }
-                append(metadata["totalParameters"])
-                append(", ")
-
-                withStyle(
-                    style = SpanStyle(fontWeight = FontWeight.Bold),
-                ) {
-                    append("Initial Bias: ")
-                }
-                append(metadata["biasMode"])
-            }
-
-            Text(
-                text = modelName,
-                style = MaterialTheme.typography.labelMedium
-            )
-        }
 
         item {
             val state = remember(state.project) {

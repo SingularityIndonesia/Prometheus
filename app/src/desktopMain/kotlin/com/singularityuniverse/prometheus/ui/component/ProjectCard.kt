@@ -27,7 +27,7 @@ fun ProjectCard(
     goToWorkSpace: (Project) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    MediumCard(
         modifier = modifier.fillMaxWidth(),
         onClick = {
             goToWorkSpace.invoke(project)

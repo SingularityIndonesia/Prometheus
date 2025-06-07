@@ -1,9 +1,12 @@
 package com.singularityuniverse.prometheus.ui.pane
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -11,10 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.singularityuniverse.prometheus.entity.Project
 import com.singularityuniverse.prometheus.entity.scanForProjects
-import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
-import com.singularityuniverse.prometheus.ui.component.DeleteProjectDialog
-import com.singularityuniverse.prometheus.ui.component.ModelCatalogueBottomBar
-import com.singularityuniverse.prometheus.ui.component.ProjectsList
+import com.singularityuniverse.prometheus.ui.component.*
 import com.singularityuniverse.prometheus.utils.LocalWindowController
 import com.singularityuniverse.prometheus.utils.openProjectFolder
 import com.singularityuniverse.prometheus.utils.to
@@ -62,7 +62,10 @@ fun ModelCatalogue(
     Scaffold(
         modifier = modifier,
         topBar = {
-            CommonTopAppBar(titleText = "Projects")
+            Column {
+                CommonTopAppBar(titleText = "Projects")
+                LightSeparator()
+            }
         },
         bottomBar = {
             ModelCatalogueBottomBar(
@@ -75,29 +78,30 @@ fun ModelCatalogue(
             )
         }
     ) {
-        ProjectsList(
-            modifier = Modifier.padding(it),
-            projects = state.projects,
-            isLoading = state.isLoading,
-            expandedProject = state.expandedProject,
-            onToggleExpanded = { project ->
-                state.expandedProject = if (state.expandedProject == project) null else project
-            },
-            onDeleteClick = { project ->
-                state.showDeleteDialog = project
-                state.expandedProject = null
-            },
-            onOpenFolder = { project ->
-                scope.launch {
-                    openProjectFolder(project)
-                }
-            },
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                bottom = 16.dp,
-            ),
-            goToWorkSpace = goToWorkSpace,
-        )
+        Surface(
+            modifier = Modifier
+                .padding(it)
+                .fillMaxSize(),
+        ) {
+            ProjectsList(
+                projects = state.projects,
+                isLoading = state.isLoading,
+                expandedProject = state.expandedProject,
+                onToggleExpanded = { project ->
+                    state.expandedProject = if (state.expandedProject == project) null else project
+                },
+                onDeleteClick = { project ->
+                    state.showDeleteDialog = project
+                    state.expandedProject = null
+                },
+                onOpenFolder = { project ->
+                    scope.launch {
+                        openProjectFolder(project)
+                    }
+                },
+                contentPadding = PaddingValues(16.dp),
+                goToWorkSpace = goToWorkSpace,
+            )
+        }
     }
 }

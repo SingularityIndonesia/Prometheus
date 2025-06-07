@@ -15,6 +15,12 @@ fun CommonTopAppBar(
     onNavigateBack: (() -> Unit)? = null,
 ) {
     TopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+        ),
         title = {
             titleText?.let { Text(it) }
         },
