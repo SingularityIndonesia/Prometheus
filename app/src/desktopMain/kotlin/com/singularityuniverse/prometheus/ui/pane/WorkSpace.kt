@@ -98,7 +98,7 @@ fun Navigator(
     Column(
         modifier = modifier
     ) {
-        Text("WIP")
+        Text("V1.0")
     }
 }
 
