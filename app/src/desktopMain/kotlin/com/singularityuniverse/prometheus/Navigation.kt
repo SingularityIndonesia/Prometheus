@@ -12,13 +12,16 @@ import androidx.navigation.navArgument
 import com.singularityuniverse.prometheus.ui.pane.*
 
 @Composable
-fun MainNavigation(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = "catalogue") {
+fun MainNavigation(modifier: Modifier = Modifier, navController: NavHostController) {
+    NavHost(
+        modifier = modifier,
+        navController = navController,
+        startDestination = "catalogue"
+    ) {
         composable(
             route = "catalogue"
         ) {
             ModelCatalogue(
-                modifier = Modifier.fillMaxSize(),
                 state = remember { ModelCatalogueState() },
                 onCreateNewModel = {
                     navController.navigate("create")
@@ -33,7 +36,6 @@ fun MainNavigation(navController: NavHostController) {
             route = "create"
         ) {
             CreateModelForm(
-                modifier = Modifier.fillMaxSize(),
                 state = remember { CreateModelFormState() },
                 onReturn = {
                     navController.popBackStack()

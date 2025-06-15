@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +20,9 @@ import com.singularityuniverse.prometheus.ui.component.CommonTopAppBar
 import com.singularityuniverse.prometheus.ui.component.Landscape
 import com.singularityuniverse.prometheus.ui.component.LandscapeState
 import com.singularityuniverse.prometheus.ui.component.LightSeparator
+import com.singularityuniverse.prometheus.ui.scaffold.Info
+import com.singularityuniverse.prometheus.ui.scaffold.Navigator
+import com.singularityuniverse.prometheus.ui.scaffold.Status
 import com.singularityuniverse.prometheus.utils.LocalWindowController
 import com.singularityuniverse.prometheus.utils.openProjectFolder
 import com.singularityuniverse.prometheus.utils.to
@@ -46,65 +48,52 @@ fun WorkSpace(state: WorkSpaceState, onNavigateBack: () -> Unit) {
         windowController.requestFullScreen(true)
     }
 
-    Scaffold(
-        topBar = {
-            val title = state.project?.name ?: "Loading.."
-            Column {
-                CommonTopAppBar(
-                    titleText = title,
-                    onNavigateBack = onNavigateBack,
-                    onOpenFolder = {
-                        scope.launch {
-                            openProjectFolder(state.project!!)
-                        }
-                    }
-                )
-                LightSeparator()
-            }
-        }
-    ) {
-        Row(
-            modifier = Modifier.padding(it)
+    Navigator {
+        Column(
+            modifier = Modifier
+                .width(72.dp)
+                .padding(16.dp)
         ) {
-            Navigator(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.background)
-                    .width(72.dp)
-                    .padding(16.dp)
-            )
-            ProjectSate(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface)
-                    .weight(1f)
-                    .fillMaxHeight(),
-                state = state
-            )
-            Info(
-                modifier = Modifier
-                    .width(260.dp)
-                    .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.background),
-                state = state
-            )
+            Text("V1.0")
         }
     }
-}
 
-@Composable
-fun Navigator(
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-    ) {
-        Text("V1.0")
+    Status {
+        val title = state.project?.name ?: "Loading.."
+        Column {
+            CommonTopAppBar(
+                titleText = title,
+                onNavigateBack = onNavigateBack,
+                onOpenFolder = {
+                    scope.launch {
+                        openProjectFolder(state.project!!)
+                    }
+                }
+            )
+            LightSeparator()
+        }
     }
+
+    Info {
+        InfoContent(
+            modifier = Modifier
+                .width(260.dp)
+                .fillMaxHeight(),
+            state = state,
+        )
+    }
+
+    ProjectSate(
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.background)
+            .fillMaxHeight(),
+        state = state
+    )
+
 }
 
-
 @Composable
-fun Info(
+fun InfoContent(
     state: WorkSpaceState,
     modifier: Modifier = Modifier
 ) {
