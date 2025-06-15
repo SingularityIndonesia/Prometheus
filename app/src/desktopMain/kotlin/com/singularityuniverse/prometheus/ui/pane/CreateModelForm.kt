@@ -40,9 +40,7 @@ fun CreateModelForm(
             onNavigateBack = {
                 onReturn.invoke(null)
             }
-        ) {
-            onReturn.invoke(null)
-        }
+        )
     }
 
     Column {
